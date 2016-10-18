@@ -11,15 +11,18 @@ public class nikkei_daily{
 	public static void main(String[] args) throws IOException{
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2014";
+		String datayear = "\\2007";
 		//String datadir = "\\rawcsv\\daily_seperated"; //読み込むファイルが在るディレクトリ名
 		//String writedir = "\\rawcsv\\daily\\"; //ファイルを書き込むディレクトリ名
-		String datadir = "\\rawcsv_2\\daily_seperated"; //読み込むファイルが在るディレクトリ名
-		String writedir = "\\rawcsv_2\\daily\\"; //ファイルを書き込むディレクトリ名
-		//String datadir = "\\price_or_depth_change\\daily_seperated"; //読み込むファイルが在るディレクトリ名
-		//String writedir = "\\price_or_depth_change\\daily\\"; //ファイルを書き込むディレクトリ名
+		//String datadir = "\\rawcsv_2\\daily_seperated"; //読み込むファイルが在るディレクトリ名
+		//String writedir = "\\rawcsv_2\\daily\\"; //ファイルを書き込むディレクトリ名
+		//String datadir = "\\price_change\\daily_seperated"; //読み込むファイルが在るディレクトリ名
+		//String writedir = "\\price_change\\daily\\"; //ファイルを書き込むディレクトリ名
+		String datadir = "\\price_or_depth_change\\daily_seperated"; //読み込むファイルが在るディレクトリ名
+		String writedir = "\\price_or_depth_change\\daily\\"; //ファイルを書き込むディレクトリ名
 		//int sep = 4; //ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[rawcsv]
-		int sep = 5; //ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[rawcsv_2]
+		//int sep = 5; //ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[rawcsv_2, price_change]
+		int sep = 7; //ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[price_or_depth_change]
 		//File makedir = new File(currentdir + datayear + writedir);
 		//if(!makedir.exists()){
 			////書き込む先のディレクトリが存在しなければ作成する．
@@ -31,6 +34,7 @@ public class nikkei_daily{
 
         File rfilepath = new File(currentdir + datayear + datadir); //読み込むファイルのディレクトリのパス．
         File[] filelist = rfilepath.listFiles(); //読み込むファイル名を取得する．
+
         for(int i=0; i<filelist.length; i++){
 
         	rfilename = filelist[i].getAbsolutePath();

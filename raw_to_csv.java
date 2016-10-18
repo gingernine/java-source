@@ -23,7 +23,9 @@ public class raw_to_csv{
 		File rfilepath = new File(currentdir + datayear + datadir); //読み込むファイルのディレクトリのパス．
         File[] filelist = rfilepath.listFiles(); //読み込むファイル名を取得する．
 
-        for(int i=1; i<filelist.length; i++){
+        //int startrow = 0; //読み込むはじめの行．[2006,2007]
+        int startrow = 1; //読み込むはじめの行．[2014]
+        for(int i=startrow; i<filelist.length; i++){
 
         	System.out.println(filelist[i]);
 
