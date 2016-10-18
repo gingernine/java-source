@@ -29,6 +29,7 @@ public class bid_more_than_ask_volume{
         File[] filelist = rfilepath.listFiles(); //読み込むファイル名を取得する．
         File file = new File(currentdir + datayear + writedir + task + task + ".csv" );
      	PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
+
      	if(task.equals("\\date_error")){
      		pw.println("date,error,");
             for(int i=0; i<filelist.length; i++){
