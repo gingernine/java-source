@@ -14,17 +14,23 @@ public class raw_to_csv{
 
     	String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\nikkei_needs_output";
     	String datayear = "\\2014";
-		String datadir = "\\raw";
+    	String datadir = "\\raw"; //2014
+		//String datadir = "\\raw_daily"; //2006,2007
+    	int sep = 3; //ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[2014]
+    	//int sep = 4; //ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[2006,2007]
 		String writedir = "\\rawcsv\\daily_seperated\\";
-        BufferedReader br = new BufferedReader(new FileReader(currentdir + datayear + datadir + "\\filelist.txt"));//読み込むファイル名のリストを取得
-        String txtFileName;
 
-        while((txtFileName = br.readLine()) != null) {
+		File rfilepath = new File(currentdir + datayear + datadir); //読み込むファイルのディレクトリのパス．
+        File[] filelist = rfilepath.listFiles(); //読み込むファイル名を取得する．
+
+        for(int i=1; i<filelist.length; i++){
+
+        	System.out.println(filelist[i]);
 
         	//取り出すデータに関する変数の定義
         	String wline; //ファイルに書き込む行を作る．
         	//String record1; //レコード種別1x
-        	//int day; //日付(月日のみ)
+        	int date; //日付
         	//String exchange; //取引所コード
         	//String security; //証券種別
         	//String code1; //銘柄コード(a,b)
@@ -43,27 +49,25 @@ public class raw_to_csv{
         	//String tradeprice = ""; //約定データの取引価格の一時保存
         	//String tradevolume = ""; //約定データの取引数量(枚)の一時保存
         	int time_second; //時刻＋秒数を数値化したもの
-        	boolean isInit = true; //データが初期値であるかの判断をする．
         	//boolean just_before_trade = false; //約定データが最良気配値変化の直前のものであるか．
 
-
         	//扱うファイル名の取得と書き出すファイルの指定
-        	FileReader fr = new FileReader(txtFileName);
+        	FileReader fr = new FileReader(filelist[i]);
             BufferedReader brtxt = new BufferedReader(fr);
             String line = "";
 
-            String[] filename = txtFileName.split("\\_");
-            int length = filename[3].length();
-            String fileID = filename[3].substring(length-8, length);
+            String[] filename = filelist[i].getAbsolutePath().split("\\_");
+            int length = filename[sep].length();
+            String fileID = filename[sep].substring(length-8, length);
             System.out.println(fileID);
 
-         	File file = new File(currentdir + datayear + writedir + fileID + "_" + filename[4] + "_.csv" );
+         	File file = new File(currentdir + datayear + writedir + fileID + "_" + filename[sep+1] + "_.csv" );
          	PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
 
-            while ((line = brtxt.readLine()) != null) { //txtファイル名を一行ずつロードする
+            while ((line = brtxt.readLine()) != null) {
 
             	//record1 = line.substring(0,1);
-            	//day = Integer.parseInt(line.substring(8,12));
+            	date = Integer.parseInt(line.substring(4,12));
             	//exchange = line.substring(13,15);
             	//security = line.substring(15,17);
             	//code1 = line.substring(21,23);
@@ -76,30 +80,16 @@ public class raw_to_csv{
             	kind = line.substring(49,52);
             	volume = line.substring(56,66);
 
-            	time_second = Integer.parseInt(time + second);
-
-            	//9:00:00時点の最良買い気配値と最良売り気配値を取得する．
-             	if(time_second < 90000){
-             		if(kind.equals("128")){
-             			bidtemp = price;
-             			biddepth = volume;
-             		} else if (kind.equals("  0")){
-             			asktemp = price;
-             			askdepth = volume;
-             		}
-             	}
+            	if(date < 20060227){
+            		//2006年2月26日までは秒のデータがない．
+            		time_second = Integer.parseInt(time + "00");
+            	} else {
+            		time_second = Integer.parseInt(time + second);
+            	}
 
              	//9:00:00以降はデータを収録する．
              	//収録するデータ行はcsv形式で作成する.
              	if(time_second >= 90000 && time_second <= 151500){
-             		if(isInit){
-             			wline = fileID + "," + time.substring(0,2) + ":" +
-             					time.substring(2,4) + ":" + second + ",Quote,,," +
-             					bidtemp + "," + biddepth + "," + asktemp + "," + askdepth + ",,";
-             			pw.println(wline);
-             			isInit = false;
-             		}
-
              		if(record2.equals(" 0")){
              			wline = fileID + "," + time.substring(0,2) + ":" +
              					time.substring(2,4) + ":" + second + ",Trade," +
@@ -126,9 +116,7 @@ public class raw_to_csv{
             fr.close();
             pw.close();
         }
-        br.close();
     }
-
 }
 
 

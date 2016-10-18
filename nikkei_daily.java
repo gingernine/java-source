@@ -5,15 +5,18 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-//raw,csv,raw_csvの3フォルダには日次のデータが複数ファイルに分割されているので各日のファイルに統合する．
+//raw,csv,rawcsvの3フォルダには一日のデータが複数ファイルに分割されているので各日のファイルに統合する．
 public class nikkei_daily{
 
 	public static void main(String[] args) throws IOException{
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2014";
-		String datadir = "\\price_or_depth_change\\daily_seperated"; //読み込むファイルが在るディレクトリ名
-		String writedir = "\\price_or_depth_change\\daily\\"; //ファイルを書き込むディレクトリ名
+		String datayear = "\\2006";
+		String datadir = "\\rawcsv\\daily_seperated"; //読み込むファイルが在るディレクトリ名
+		String writedir = "\\rawcsv\\daily\\"; //ファイルを書き込むディレクトリ名
+		//String datadir = "\\price_or_depth_change\\daily_seperated"; //読み込むファイルが在るディレクトリ名
+		//String writedir = "\\price_or_depth_change\\daily\\"; //ファイルを書き込むディレクトリ名
+		int sep = 4; //ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[rawcsv]
 		//File makedir = new File(currentdir + datayear + writedir);
 		//if(!makedir.exists()){
 			////書き込む先のディレクトリが存在しなければ作成する．
@@ -28,8 +31,8 @@ public class nikkei_daily{
         for(int i=0; i<filelist.length; i++){
 
         	rfilename = filelist[i].getAbsolutePath();
-        	int pathlength = rfilename.split("\\_")[7].length();
-        	rfiledate = rfilename.split("\\_")[7].substring(pathlength-8, pathlength); //読み込むファイルの日付を取得
+        	int pathlength = rfilename.split("\\_")[sep].length();
+        	rfiledate = rfilename.split("\\_")[sep].substring(pathlength-8, pathlength); //読み込むファイルの日付を取得
 
         	if(!rfiledate.equals(wfiledate)){
         		wfiledate = rfiledate;
@@ -46,7 +49,6 @@ public class nikkei_daily{
          	while((line = brtxt.readLine()) != null){
          		pw.println(line);
          	}
-
          	brtxt.close();
             fr.close();
             pw.close();
