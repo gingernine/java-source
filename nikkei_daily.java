@@ -11,12 +11,15 @@ public class nikkei_daily{
 	public static void main(String[] args) throws IOException{
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2006";
-		String datadir = "\\rawcsv\\daily_seperated"; //読み込むファイルが在るディレクトリ名
-		String writedir = "\\rawcsv\\daily\\"; //ファイルを書き込むディレクトリ名
+		String datayear = "\\2014";
+		//String datadir = "\\rawcsv\\daily_seperated"; //読み込むファイルが在るディレクトリ名
+		//String writedir = "\\rawcsv\\daily\\"; //ファイルを書き込むディレクトリ名
+		String datadir = "\\rawcsv_2\\daily_seperated"; //読み込むファイルが在るディレクトリ名
+		String writedir = "\\rawcsv_2\\daily\\"; //ファイルを書き込むディレクトリ名
 		//String datadir = "\\price_or_depth_change\\daily_seperated"; //読み込むファイルが在るディレクトリ名
 		//String writedir = "\\price_or_depth_change\\daily\\"; //ファイルを書き込むディレクトリ名
-		int sep = 4; //ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[rawcsv]
+		//int sep = 4; //ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[rawcsv]
+		int sep = 5; //ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[rawcsv_2]
 		//File makedir = new File(currentdir + datayear + writedir);
 		//if(!makedir.exists()){
 			////書き込む先のディレクトリが存在しなければ作成する．
@@ -42,8 +45,7 @@ public class nikkei_daily{
             BufferedReader brtxt = new BufferedReader(fr);
             String line = "";
 
-            File file = new File(
-            		currentdir + datayear + writedir + wfiledate + "_.csv" );
+            File file = new File(currentdir + datayear + writedir + wfiledate + "_.csv" );
          	PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file, true))); //overwrite true
 
          	while((line = brtxt.readLine()) != null){
