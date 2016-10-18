@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 
 //ロイターのコンマ秒データから，日次データを作成する．
-public class plate_fluctuation {
+public class extract_reuter{
 
 	public static void main(String[] args) throws IOException {
 
