@@ -6,7 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 //(nikkei needs)2010年7月16日以後のフォーマットでの日経平均先物の約定データ，最良気配値のデータ(限月調整済み)を抽出するプログラム
-public class plate_fluctuation_nikkei{
+public class extract_nikkei{
 
     public static void main(String[] args) throws IOException{
 
