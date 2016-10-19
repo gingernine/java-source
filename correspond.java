@@ -5,273 +5,114 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-//日経ニーズデータとコンマ秒データとの対応を、出来高から判定するプログラム
+
+//使用ファイル:　日経NEEDSはprice_or_depth_change-dailyフォルダ内，ロイター社のデータはdailyフォルダ内の日次ファイル．
+//日経NEEDSデータとコンマ秒データとの対応を、約上の出来高，最良気配値の数量から判定するプログラム．
+//寄付の約定からはじめ，場の終わりの約定(大引け)までを比較する．
+//合うデータと合わないデータをそれぞれ別ファイル(日次)で作成する．
 public class correspond{
 
     public static void main(String[] args) throws IOException{
-    	String Index;
-    	int i1 = 0;
-    	int number1 = 0;
-    	int number2 = 0;
-    	int count = 1;//
-    	int count1 = 0;//for文
-    	int count2 = 0;//for文
-    	int count_if = 0;//for文
-    	int i2 = 0;
-    	int i3 = 0;
 
-    	String buffer1[] = new String[9000000];
-    	String buffer2[] = new String[9000000];
+    	String nikkeidir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\nikkei_needs_output";
+    	String reuterdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\reuter_output";
+    	String datayear = "\\2006";
+    	String nikkeidata = "\\price_or_depth_change\\daily";
+    	String reuterdata = "\\daily";
+    	boolean continuous = false; //ザラバ時間を判定する．
+    	boolean sepsession = true; //前場と後場に分かれていた年ならtrue．
 
-    	int volume = 0;
+    	File nikkeipath = new File(nikkeidir + datayear + nikkeidata); //読み込む日経NEEDSファイルのディレクトリのパス．
+    	File reuterpath = new File(reuterdir + datayear + reuterdata); //読み込むreuterファイルのディレクトリのパス．
+    	File[] nikkeilist = nikkeipath.listFiles(); //読み込む日経NEEDSファイル名を取得する．
+    	File[] reuterlist = reuterpath.listFiles(); //読み込むreuterァイル名を取得する．
 
-    	int volume_nikkei = 0;//日経ニーズの出来高
-    	int volume_konma = 0;//コンマデータの出来高
-    	int sum_volume = 0;//出来高の総計(コンマデータ)
-    	int count_konma = 0;//コンマデータの行の確認。
-    	int length_konma = 0;//コンマデータの長さの確認
+        for(int i=0; i<nikkeilist.length; i++){
 
-    	String a;
+        	FileReader nikkeifr = new FileReader(nikkeilist[i]);
+        	FileReader reuterfr = new FileReader(reuterlist[i]);
+            BufferedReader nikkeibr = new BufferedReader(nikkeifr);
+            BufferedReader reuterbr = new BufferedReader(reuterfr);
+            String nikkeiline = ""; //読み込む行
+            String reuterline = ""; //読み込む行
+            String nikkeisep[]; //csv
+            String reutersep[]; //csv
+            String nikkeitrade; //nikkeiの約定価格と約定数量(枚)を文字列にしたもの．
+            String reutertrade; //reuterの約定価格と約定数量(枚)を文字列にしたもの．
+            String nikkeiquote; //nikkeiの売り買い両方の気配値数量(枚)を文字列にしたもの．
+            String reuterquote; //reuterの売り買い両方の気配値数量(枚)を文字列にしたもの．
+            boolean isTrade = false; //約定データならtrue．
+            boolean matched = false; //日経NEEDSとロイターのデータがマッチしたらtrue．
 
-        BufferedReader br = new BufferedReader(new FileReader("filelist.txt"));//読み取りたいファイル名の記入
-        String txtFileName;
+            File matchedfile = new File("");
+            File nikkeifile = new File("");
+            File reiterfile = new File("");
+         	PrintWriter matchedpw = new PrintWriter(new BufferedWriter(new FileWriter(matchedfile)));
+         	PrintWriter nikkeipw = new PrintWriter(new BufferedWriter(new FileWriter(nikkeifile)));
+         	PrintWriter reuterpw = new PrintWriter(new BufferedWriter(new FileWriter(reuterfile)));
 
-        while((txtFileName = br.readLine()) != null) {
+            while ((nikkeiline = nikkeibr.readLine()) != null) {
 
-        	FileReader fr = new FileReader(txtFileName);
-            BufferedReader brtxt = new BufferedReader(fr);
-            String line ="";
+            	isTrade = false; //initial.
+            	matched = false; //initial.
+            	nikkeisep = nikkeiline.split(",",-1); //空欄があっても分割数に影響が無いよう-1を付ける．
 
-            while ((line = brtxt.readLine()) != null) {
-            	Index = line;
-            	if(1 == count%2){
-            		String d1 =  Index.substring(56,66);
-            		volume = Integer.parseInt(d1);
-            		if(volume != 0){
-                		buffer1[number1] = Index;
-                		number1++;
+            	if(nikkeisep[2].equals("Trade")){
+            		isTrade = true;
+            	} else {
+            		isTrade = false;
+            	}
+
+            	if(nikkeisep[9].equals("1")){
+            		//場のはじめの約定からスタート
+            		continuous = true;
+            	}
+
+            	if(continuous){
+            		//ザラバ時間のみのデータを使う．
+
+            		if(isTrade){
+            			nikkeitrade = nikkeisep[3] + "_" + nikkeisep[4]; //約定データは"価格_数量"．
+            		} else {
+            			nikkeiquote = nikkeisep[6] + "_" + nikkeisep[8]; //気配値データは"最良買い気配数量_最良売り気配数量"．
             		}
-            	} else if(0 == count%2) {
-            		buffer2[number2] = Index;
-            		number2++;
+
+            		while ((reuterline = reuterbr.readline()) != null) {
+
+            			reutersep = reuterline.split(",",-1);
+            			if (isTrade) {
+            				if(reutersep.equals("Trade")){
+                				reutertrade = reutersep[3] + reutersep[4]; //約定データは"価格_数量"．
+                				if(nikkeitrade.equals(reutertrade)){
+                					//約定データでかつ数量が一致すればファイルに書き込む．
+                					matchedpw.println(nikkeiline + ",," + reuterline);
+                					matched = true;
+                					break;
+                				}
+                			}
+            			} else {
+            				if(reutersep.equals("Quote")){
+                				reuterquote = reutersep[6] + reutersep[8]; //気配値データは"最良買い気配数量_最良売り気配数量"．
+                				if(nikkeitquote.equals(reuterquote)){
+                					//気配値データでかつ数量が一致すればファイルに書き込む．
+                					matchedpw.println(nikkeiline + ",," + reuterline);
+                					matched = true;
+                					break;
+                				}
+                			}
+            			}
+            		}
+
+            		if (!matched) {
+            			//両社のデータで合致するものがない場合はエラーとして別ファイルに書き出す．
+            			nikkeipw.println(nikkeiline);
+            			reuterpw.println(reuterline);
+            		}
             	}
             }
-
-            count_konma = number2 - 1;
-
-        	if(0 == count%2){
-        		String[] filename = txtFileName.split("\\.");
-        		File file = new File(filename[0] +	"_comb2.txt");
-             	PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
-        		number1 = 0;
-        		number2 = 0;
-        		while(number2 <= count_konma){
-
-        			/*String d1 =  buffer1[number1].substring(56,66);//コンマ秒データ2010年まで（ここから）
-            		volume_nikkei = Integer.parseInt(d1);
-
-            		length_konma = buffer2[number2].length();
-
-            		for(i1=0;i1<length_konma;i1++){
-                        a = buffer2[number2].substring(i1,i1+1);
-
-                        if(count_if == 5 && !(a.equals(",")) && count1 == 0){
-                        	i2 = i1;
-                        	count1++;
-                        }
-                        if(count_if == 6 && count1 != 0 && count2 == 0){
-                        	i3 = i1-1;
-                        	count2++;
-                        	String db = buffer2[number2].substring(i2,i3);
-                        	volume_konma = Integer.parseInt(db);
-                        }
-                        if(a.equals(",")){
-                            count_if++;
-                        }
-                    }
-            		count_if = 0;
-            		count1 = 0;
-            		count2 = 0;
-            		//System.out.println(volume_konma);
-            		if(volume_nikkei == volume_konma){
-            			pw.println(buffer1[number1] + " " + buffer2[number2]);
-            			//System.out.println(buffer1[number1] + " " + buffer2[number2] + "happy");
-            			number1++;
-    					number2++;
-            		}
-            		else if(volume_nikkei != volume_konma){
-            			pw.println(buffer1[number1] + " " + buffer2[number2]);
-            			//System.out.println(buffer1[number1] + " " + buffer2[number2]);
-
-            			while(volume_nikkei > sum_volume){
-            				//System.out.println("come on");
-
-            				sum_volume += volume_konma;
-
-
-            				number2++;
-            				if(volume_nikkei > sum_volume){
-            					pw.println("--------------------------------------------------------------------- " + buffer2[number2]);
-            				}
-            				if(number2 > count_konma){
-
-            				}
-            				else{
-            					length_konma = buffer2[number2].length();
-
-
-                        		for(i1=0;i1<length_konma;i1++){
-                                    a = buffer2[number2].substring(i1,i1+1);
-
-                                    if(count_if == 6 && !(a.equals(",")) && count1 == 0){
-                                    	i2 = i1;
-                                    	count1++;
-                                    }
-                                    if(count_if == 7 && count1 != 0 && count2 == 0){
-                                    	i3 = i1-1;
-                                    	count2++;
-                                    	String db = buffer2[number2].substring(i2,i3);
-                                    	volume_konma = Integer.parseInt(db);
-                                    }
-                                    if(a.equals(",")){
-                                        count_if++;
-                                    }
-                                }
-                        		count_if = 0;
-                        		count1 = 0;
-                        		count2 = 0;
-            				}
-
-            			}
-            			if(volume_nikkei == sum_volume){
-            				//System.out.println("ok");
-            			}
-            			else if(volume_nikkei != sum_volume){
-            				System.out.println("NG");
-            				System.out.println(volume_nikkei);
-            				System.out.println(sum_volume);
-
-            				System.out.println(buffer1[number1] + " " + buffer2[number2]);
-            				pw.close();
-            				return;
-            			}
-            			sum_volume = 0;
-            			number1++;
-            		}//コンマ秒データ2010年まで（ここまで）*/
-
-
-        			String d1 =  buffer1[number1].substring(56,66);//コンマ秒データ2011年まで（ここから）
-            		volume_nikkei = Integer.parseInt(d1);
-
-            		length_konma = buffer2[number2].length();
-
-            		for(i1=0;i1<length_konma;i1++){
-                        a = buffer2[number2].substring(i1,i1+1);
-
-                        if(count_if == 6 && !(a.equals(",")) && count1 == 0){
-                        	i2 = i1;
-                        	count1++;
-                        }
-                        if(count_if == 7 && count1 != 0 && count2 == 0){
-                        	i3 = i1-1;
-                        	count2++;
-                        	String db = buffer2[number2].substring(i2,i3);
-                        	volume_konma = Integer.parseInt(db);
-                        }
-                        if(a.equals(",")){
-                            count_if++;
-                        }
-                    }
-            		count_if = 0;
-            		count1 = 0;
-            		count2 = 0;
-            		//System.out.println(volume_konma);
-            		if(volume_nikkei == volume_konma){
-            			pw.println(buffer1[number1] + " " + buffer2[number2]);
-            			//System.out.println(buffer1[number1] + " " + buffer2[number2] + "happy");
-            			number1++;
-    					number2++;
-            		}
-            		else if(volume_nikkei != volume_konma){
-            			pw.println(buffer1[number1] + " " + buffer2[number2]);
-            			//System.out.println(buffer1[number1] + " " + buffer2[number2]);
-
-            			while(volume_nikkei > sum_volume){
-            				//System.out.println("come on");
-
-            				sum_volume += volume_konma;
-
-
-            				number2++;
-            				if(volume_nikkei > sum_volume){
-            					pw.println("--------------------------------------------------------------------- " + buffer2[number2]);
-            				}
-            				if(number2 > count_konma){
-
-            				}
-            				else{
-            					length_konma = buffer2[number2].length();
-
-
-                        		for(i1=0;i1<length_konma;i1++){
-                                    a = buffer2[number2].substring(i1,i1+1);
-
-                                    if(count_if == 6 && !(a.equals(",")) && count1 == 0){
-                                    	i2 = i1;
-                                    	count1++;
-                                    }
-                                    if(count_if == 7 && count1 != 0 && count2 == 0){
-                                    	i3 = i1-1;
-                                    	count2++;
-                                    	String db = buffer2[number2].substring(i2,i3);
-                                    	volume_konma = Integer.parseInt(db);
-                                    }
-                                    if(a.equals(",")){
-                                        count_if++;
-                                    }
-                                }
-                        		count_if = 0;
-                        		count1 = 0;
-                        		count2 = 0;
-            				}
-
-            			}
-            			if(volume_nikkei == sum_volume){
-            				//System.out.println("ok");
-            			}
-            			else if(volume_nikkei != sum_volume){
-            				System.out.println("NG");
-            				System.out.println(volume_nikkei);
-            				System.out.println(sum_volume);
-
-            				System.out.println(buffer1[number1] + " " + buffer2[number2]);
-            				pw.close();
-            				return;
-            			}
-            			sum_volume = 0;
-            			number1++;
-            		}//コンマ秒データ2011年から（ここまで）
-
-            	}
-                pw.close();
-                for(int i=0;i<=number1;i++){
-            		buffer1[i] = null;
-            	}
-                for(int i=0;i<=count_konma + 1;i++){
-            		buffer2[i] = null;
-            	}
-                number1 = 0;
-                number2 = 0;
-        	}
-            count++;
-
-            brtxt.close();
-            fr.close();
-
-        	// txtファイル名を一行ずつロードする
+            matchedpw.close();
+            nikkeipw.close();
+            reuterpw.close();
         }
-        br.close();
-
     }
-
 }
