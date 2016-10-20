@@ -36,6 +36,9 @@ public class extract_nikkei_2 {
 			File rfilepath = new File(datapath); // 読み込むファイルのディレクトリのパス．
 			File[] filelist = rfilepath.listFiles(); // 読み込むファイル名を取得する．
 			for (int i = 0; i < filelist.length; i++) {
+				if (filelist[i].isDirectory()) {
+					continue;
+				}
 
 				rfilename = filelist[i].getAbsolutePath().split("\\."); // 読み込むファイルの日付を取得
 
@@ -75,7 +78,7 @@ public class extract_nikkei_2 {
 				}
 				System.out.println(yearcode);
 
-				while ((line = brtxt.readLine()) != null) { // txtファイル名を一行ずつロードする
+				while ((line = brtxt.readLine()) != null) { // データを一行ずつロードする
 
 					record1 = line.substring(2, 3);
 					day = Integer.parseInt(line.substring(8, 12));

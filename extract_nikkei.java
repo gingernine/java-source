@@ -15,7 +15,7 @@ public class extract_nikkei {
 		String datayear = "\\2011";
 		String datadir = "\\nikkei_needs_data";
 
-		File rfilepath = new File("C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\testdata"); // 読み込むファイルのディレクトリのパス．
+		File rfilepath = new File("G:\\日経平均先物" + datayear); // 読み込むファイルのディレクトリのパス．
 		File[] filelist = rfilepath.listFiles(); // 読み込むファイル名を取得する．
 
 		for (int i = 0; i < filelist.length; i++) {
@@ -82,7 +82,7 @@ public class extract_nikkei {
 			}
 			System.out.println(yearcode);
 
-			while ((line = brtxt.readLine()) != null) { // txtファイル名を一行ずつロードする
+			while ((line = brtxt.readLine()) != null) { // データを一行ずつロードする
 
 				record1 = line.substring(0, 1);
 				day = Integer.parseInt(line.substring(8, 12));
