@@ -12,7 +12,7 @@ public class extract_nikkei {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2011";
+		String datayear = "\\2012";
 		String datadir = "\\nikkei_needs_data";
 
 		File rfilepath = new File("G:\\日経平均先物" + datayear); // 読み込むファイルのディレクトリのパス．
