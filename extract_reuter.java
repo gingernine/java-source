@@ -60,6 +60,7 @@ public class extract_reuter{
 				//一日ごとにファイルに書き出していく．
 				if (!rfiledate.equals(seperated[2]) && !seperated[2].equals("Date[L]")) {
 					//日にちを更新して新規日付のファイルを作成する．
+					pw.close();
 					rfiledate = seperated[2];
 					System.out.println(JNI);
 					System.out.println(rfiledate);
