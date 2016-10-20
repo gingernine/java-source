@@ -14,19 +14,17 @@ public class raw_to_csv {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2014";
-		String datadir = "\\raw"; // 2014
+		String datayear = "\\2011";
+		String datadir = "\\raw"; // 2011,2014
 		// String datadir = "\\raw_daily"; //2006,2007
-		int sep = 3; // ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[2014]
+		int sep = 3; // ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[2011,2014]
 		// int sep = 4; //ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[2006,2007]
 		String writedir = "\\rawcsv\\daily_seperated\\";
 
 		File rfilepath = new File(currentdir + datayear + datadir); // 読み込むファイルのディレクトリのパス．
 		File[] filelist = rfilepath.listFiles(); // 読み込むファイル名を取得する．
 
-		// int startrow = 0; //読み込むはじめの行．[2006,2007]
-		int startrow = 1; // 読み込むはじめの行．[2014]
-		for (int i = startrow; i < filelist.length; i++) {
+		for (int i = 0; i < filelist.length; i++) {
 
 			System.out.println(filelist[i]);
 
