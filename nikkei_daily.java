@@ -12,7 +12,7 @@ public class nikkei_daily {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2007";
+		String datayear = "\\2011";
 		// String datadir = "\\rawcsv\\daily_seperated"; //読み込むファイルが在るディレクトリ名
 		// String writedir = "\\rawcsv\\daily\\"; //ファイルを書き込むディレクトリ名
 		// String datadir = "\\rawcsv_2\\daily_seperated"; //読み込むファイルが在るディレクトリ名
