@@ -17,7 +17,7 @@ public class correspond {
 		String rootdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src";
 		String nikkeidir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\nikkei_needs_output";
 		String reuterdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\reuter_output";
-		String datayear = "\\2014";
+		String datayear = "\\2011";
 		String nikkeidatadir = "\\price_or_depth_change\\daily";
 		String reuterdatadir = "\\daily";
 		String writedir = "\\nikkei_reuter_match";

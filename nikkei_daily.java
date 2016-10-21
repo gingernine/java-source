@@ -38,6 +38,9 @@ public class nikkei_daily {
 		File rfilepath = new File(currentdir + datayear + datadir); // 読み込むファイルのディレクトリのパス．
 		File[] filelist = rfilepath.listFiles(); // 読み込むファイル名を取得する．
 
+		File file = new File("C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\dummy\\dummy.txt");
+		PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
+
 		for (int i = 0; i < filelist.length; i++) {
 
 			rfilename = filelist[i].getAbsolutePath();
@@ -45,22 +48,23 @@ public class nikkei_daily {
 			rfiledate = rfilename.split("\\_")[sep].substring(pathlength - 8, pathlength); // 読み込むファイルの日付を取得
 
 			if (!rfiledate.equals(wfiledate)) {
+				pw.close();
 				wfiledate = rfiledate;
+				file = new File(currentdir + datayear + writedir + wfiledate + "_.csv");
+				pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
 			}
 			System.out.println(wfiledate);
+
 			FileReader fr = new FileReader(filelist[i]);
 			BufferedReader brtxt = new BufferedReader(fr);
 			String line = "";
-
-			File file = new File(currentdir + datayear + writedir + wfiledate + "_.csv");
-			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file, true))); // overwrite true
 
 			while ((line = brtxt.readLine()) != null) {
 				pw.println(line);
 			}
 			brtxt.close();
 			fr.close();
-			pw.close();
 		}
+		pw.close();
 	}
 }
