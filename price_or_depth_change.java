@@ -14,11 +14,11 @@ public class price_or_depth_change {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2013";
-		// String datadir = "\\raw_daily"; // 2006,2007
-		// int sep = 4; // ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[2006,2007]
-		String datadir = "\\raw"; // 2011,2012,2013,2014
-		int sep = 3; //ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[2011,2012,2013,2014]
+		String datayear = "\\2010";
+		// String datadir = "\\raw_daily"; // 2006,2007,2008
+		// int sep = 4; // ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[2006,2007,2008]
+		String datadir = "\\raw"; // 2009,2010,2011,2012,2013,2014
+		int sep = 3; // ファイルパスの_での区切り位置．作成するファイルに名前をつける場合に使う．[2009,2010,2011,2012,2013,2014]
 		String writedir = "\\price_or_depth_change\\daily_seperated\\";
 
 		File rfilepath = new File(currentdir + datayear + datadir); // 読み込むファイルのディレクトリのパス．
@@ -30,13 +30,13 @@ public class price_or_depth_change {
 
 			// 取り出すデータに関する変数の定義
 			String wline; // ファイルに書き込む行を作る．
-			// String record1; //レコード種別1x
+			// String record1; // レコード種別1x
 			int date; // 日付
-			// String exchange; //取引所コード
-			// String security; //証券種別
-			// String code1; //銘柄コード(a,b)
-			// String code2; //銘柄コード(限月)
-			// String code3; //銘柄コード(c,d)
+			// String exchange; // 取引所コード
+			// String security; // 証券種別
+			// String code1; // 銘柄コード(a,b)
+			// String code2; // 銘柄コード(限月)
+			// String code3; // 銘柄コード(c,d)
 			String time; // 時刻
 			String record2; // レコード種別2
 			String second; // 秒
@@ -47,8 +47,8 @@ public class price_or_depth_change {
 			String asktemp = "";// 最良売気配値の初期値 兼 一時保存
 			String biddepth = ""; // 最良買気配数量の一時保存
 			String askdepth = ""; // 最良売気配数量の一時保存
-			// String tradeprice = ""; //約定データの取引価格の一時保存
-			// String tradevolume = ""; //約定データの取引数量(枚)の一時保存
+			// String tradeprice = ""; // 約定データの取引価格の一時保存
+			// String tradevolume = ""; // 約定データの取引数量(枚)の一時保存
 			int time_second; // 時刻＋秒数を数値化したもの
 			boolean write = false; // 気配値が変化した箇所のみ抽出してファイルに書き込むので，書き込みをtrueで指示する．
 
