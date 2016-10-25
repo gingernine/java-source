@@ -17,7 +17,7 @@ public class correspond {
 		String rootdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src";
 		String nikkeidir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\nikkei_needs_output";
 		String reuterdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\reuter_output";
-		String datayear = "\\2010";
+		String datayear = "\\2006";
 		String nikkeidatadir = "\\price_or_depth_change\\daily";
 		String reuterdatadir = "\\daily";
 		String writedir = "\\nikkei_reuter_match";
@@ -61,7 +61,7 @@ public class correspond {
 			FileReader reuterfr = new FileReader(reuterlist[i]);
 			BufferedReader reuterbr = new BufferedReader(reuterfr);
 			int nrow = 0; // 行数をカウントする．
-			while ((reuterline = reuterbr.readLine()) != null) {
+			while (reuterbr.readLine() != null) {
 				nrow++;
 			}
 			reuterbr.close();
@@ -129,7 +129,7 @@ public class correspond {
 							reutertrade = reutersep[3] + reutersep[4]; // 約定データは"価格数量"．
 							if (nikkeitrade.equals(reutertrade)) {
 								// 約定データでかつ数量が一致すればファイルに書き込む．
-								start = l;
+								start = l + 1; // 次の走査は現在の終了点の次の番号から始める．
 								matchedpw.println(nikkeiline + ",," + reuterdata[l]);
 								matched = true;
 								break;
@@ -138,7 +138,7 @@ public class correspond {
 							reuterquote = reutersep[6] + reutersep[7] + reutersep[8] + reutersep[9]; // 気配値データは"最良買い気配数量最良売り気配数量"．
 							if (nikkeiquote.equals(reuterquote)) {
 								// 気配値データでかつ数量が一致すればファイルに書き込む．
-								start = l;
+								start = l + 1; // 次の走査は現在の終了点の次の番号から始める．
 								matchedpw.println(nikkeiline + ",," + reuterdata[l]);
 								matched = true;
 								break;
