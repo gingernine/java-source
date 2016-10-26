@@ -6,6 +6,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Math;
 
 // 売り/買い気配の価格の変動について系列相関を計算する．
@@ -57,7 +59,7 @@ public class serial_correlation {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2006";
+		String datayear = "\\2007";
 		String datadir = "\\rawcsv_2\\daily";
 		String writedir = "\\correlation\\";
 		// エラーを発見したときのみファイルを作成
@@ -102,8 +104,12 @@ public class serial_correlation {
 
 			while ((line = brtxt.readLine()) != null) {
 
+				time = line.split(",", -1)[1].split(":")[0] + line.split(",", -1)[1].split(":")[1];
 				if (line.split(",", -1)[9].equals("  1")) {
 					continuous = true;
+				}
+				if (Arrays.asList(closing).contains(time)) {
+					continuous = false;
 				}
 
 				if (continuous && line.split(",", -1)[2].equals("Quote")) {
@@ -137,8 +143,16 @@ public class serial_correlation {
 			file = new File(currentdir + datayear + writedir + rfiledate + "_.csv");
 			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
 			pw.println("bid,ask,");
-			for (int r = 0; r < Math.min(bidseries.size(), askseries.size()); r++) {
-				pw.println(bidseries.get(r) + "," + askseries.get(r) + ",");
+			for (int r = 0; r < Math.max(bidseries.size(), askseries.size()); r++) {
+				try {
+					pw.println(bidseries.get(r) + "," + askseries.get(r) + ",");
+				} catch (IndexOutOfBoundsException e) {
+					try {
+						pw.println("," + askseries.get(r) + ",");
+					} catch (IndexOutOfBoundsException ee) {
+						pw.println(bidseries.get(r) + ",,");
+					}
+				}
 			}
 			pw.close();
 
