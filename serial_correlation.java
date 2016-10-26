@@ -59,9 +59,9 @@ public class serial_correlation {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2007";
+		String datayear = "\\2006";
 		String datadir = "\\rawcsv_2\\daily";
-		String writedir = "\\correlation\\";
+		String writedir = "\\correlation";
 		// エラーを発見したときのみファイルを作成
 		// File newdir = new File(currentdir + datayear + writedir + "\\daily");
 		// String datadir = "\\price_or_depth_change\\daily";
@@ -136,21 +136,47 @@ public class serial_correlation {
 			brtxt.close();
 			fr.close();
 
-			File file = new File(currentdir + datayear + writedir);
+			File file = new File(currentdir + datayear + writedir + "\\daily\\");
 			if (!file.exists()) {
 				file.mkdirs();
 			}
-			file = new File(currentdir + datayear + writedir + rfiledate + "_.csv");
+			file = new File(currentdir + datayear + writedir + "\\daily\\" + rfiledate + "_.csv");
 			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
-			pw.println("bid,ask,");
-			for (int r = 0; r < Math.max(bidseries.size(), askseries.size()); r++) {
+			pw.println("bid_t,bid_t+1,ask_t,ask_t+1,");
+			for (int r = 0; r < Math.max(bidseries.size(), askseries.size()) - 1; r++) {
 				try {
-					pw.println(bidseries.get(r) + "," + askseries.get(r) + ",");
+					pw.println(bidseries.get(r) + "," + bidseries.get(r + 1) + "," + askseries.get(r) + ","
+							+ askseries.get(r + 1) + ",");
 				} catch (IndexOutOfBoundsException e) {
-					try {
-						pw.println("," + askseries.get(r) + ",");
-					} catch (IndexOutOfBoundsException ee) {
-						pw.println(bidseries.get(r) + ",,");
+					if (bidseries.size() < askseries.size()) {
+						pw.println(",,," + askseries.get(r) + "," + askseries.get(r + 1) + ",");
+					} else {
+						pw.println(bidseries.get(r) + "," + bidseries.get(r + 1) + ",,,");
+					}
+				}
+			}
+			pw.close();
+
+			file = new File(currentdir + datayear + writedir + "\\scattered\\");
+			if (!file.exists()) {
+				file.mkdirs();
+			}
+			file = new File(currentdir + datayear + writedir + "\\scattered\\" + rfiledate + "_scattered_.csv");
+			pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
+			pw.println("bid_t,bid_t+1,ask_t,ask_t+1,");
+			for (int r = 0; r < Math.max(bidseries.size(), askseries.size()) - 1; r++) {
+				try {
+					pw.println((bidseries.get(r) + 9 * Math.random()) + ","
+							+ (bidseries.get(r + 1) + 9 * Math.random())+ ","
+							+ (askseries.get(r) + 9 * Math.random()) + ","
+							+ (askseries.get(r + 1) + 9 * Math.random()) + ",");
+				} catch (IndexOutOfBoundsException e) {
+					if (bidseries.size() < askseries.size()) {
+						pw.println(",,," + (askseries.get(r) + 9 * Math.random()) + ","
+								+ (askseries.get(r + 1) + 9 * Math.random()) + ",");
+					} else {
+						pw.println((bidseries.get(r) + 9 * Math.random()) + ","
+								+ (bidseries.get(r + 1) + 9 * Math.random()) + ",,,");
 					}
 				}
 			}
