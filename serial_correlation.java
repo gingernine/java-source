@@ -166,17 +166,17 @@ public class serial_correlation {
 			pw.println("bid_t,bid_t+1,ask_t,ask_t+1,");
 			for (int r = 0; r < Math.max(bidseries.size(), askseries.size()) - 1; r++) {
 				try {
-					pw.println((bidseries.get(r) + 9 * Math.random()) + ","
-							+ (bidseries.get(r + 1) + 9 * Math.random())+ ","
-							+ (askseries.get(r) + 9 * Math.random()) + ","
-							+ (askseries.get(r + 1) + 9 * Math.random()) + ",");
+					pw.println((bidseries.get(r) + 5 * (2 * Math.random() - 1)) + ","
+							+ (bidseries.get(r + 1) + 5 * (2 * Math.random() - 1)) + ","
+							+ (askseries.get(r) + 5 * (2 * Math.random() - 1)) + ","
+							+ (askseries.get(r + 1) + 5 * (2 * Math.random() - 1)) + ",");
 				} catch (IndexOutOfBoundsException e) {
 					if (bidseries.size() < askseries.size()) {
-						pw.println(",,," + (askseries.get(r) + 9 * Math.random()) + ","
-								+ (askseries.get(r + 1) + 9 * Math.random()) + ",");
+						pw.println(",,," + (askseries.get(r) + 5 * (2 * Math.random() - 1)) + ","
+								+ (askseries.get(r + 1) + 5 * (2 * Math.random() - 1)) + ",");
 					} else {
-						pw.println((bidseries.get(r) + 9 * Math.random()) + ","
-								+ (bidseries.get(r + 1) + 9 * Math.random()) + ",,,");
+						pw.println((bidseries.get(r) + 5 * (2 * Math.random() - 1)) + ","
+								+ (bidseries.get(r + 1) + 5 * (2 * Math.random() - 1)) + ",,,");
 					}
 				}
 			}
