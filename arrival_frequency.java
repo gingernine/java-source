@@ -2,7 +2,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -25,6 +24,17 @@ import java.util.Arrays;
 // 上記の量の計算は前場/後場で別にする．
 // 使用データは，ザラバ(continuous session) のみ．(寄付直後～場の最終約定直前)
 public class arrival_frequency {
+
+	private static double mean(ArrayList list) {
+		// リスト内要素の平均値を計算する．
+		int n = list.size();
+		int sum = 0;
+		for (int j = 0; j < n; j++) {
+			sum = sum + ((Integer) list.get(j)).intValue();
+		}
+
+		return (double) sum / n;
+	}
 
 	public static void main(String[] args) throws IOException {
 
@@ -97,6 +107,9 @@ public class arrival_frequency {
 			while ((line = brtxt.readLine()) != null) {
 
 				time = line.split(",", -1)[1].split(":")[0] + line.split(",", -1)[1].split(":")[1];
+				if (line.split(",", -1)[9].equals("  1")) {
+					continuous = true;
+				}
 				if (Arrays.asList(closing).contains(time) && line.split(",", -1)[2].equals("Trade")) {
 					continuous = false;
 				}
@@ -190,25 +203,23 @@ public class arrival_frequency {
 						}
 					}
 				}
-
-				if (line.split(",", -1)[9].equals("  1")) {
-					continuous = true;
-				}
-
 			}
 
 			System.out.println("freq_market_buy: " + freq_market_buy + ", freq_market_sell: " + freq_market_sell);
 			System.out.println("freq_limit_buy: " + freq_limit_buy + ", freq_limit_sell: " + freq_limit_sell);
-			System.out.println("average_market_buy: " + ", average_market_sell: ");
-			System.out.println("average_limit_buy: " + ", average_limit_sell: ");
+			System.out.println("average_market_buy: " + mean(pieces_market_buy) +
+					", average_market_sell: " + mean(pieces_market_sell));
+			System.out.println("average_limit_buy: " + mean(pieces_limit_buy) +
+					", average_limit_sell: " + mean(pieces_limit_sell));
 			System.out.println("up_times_bid: " + up_times_bid + ", down_times_bid: " + down_times_bid);
 			System.out.println("up_times_ask: " + up_times_ask + ", down_times_ask: " + down_times_ask);
 			brtxt.close();
 			fr.close();
 
 			while (true) {
-				BufferedReader b = new BufferedReader(new InputStreamReader( System.in ));
-				if (b.readLine().equals("")) break;
+				// BufferedReader b = new BufferedReader(new InputStreamReader( System.in ));
+				// if (b.readLine().equals(""))
+				break;
 			}
 		}
 		// pw.close();
