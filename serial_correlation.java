@@ -59,7 +59,7 @@ public class serial_correlation {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2006";
+		String datayear = "\\2007";
 		String datadir = "\\rawcsv_2\\daily";
 		String writedir = "\\correlation";
 		// エラーを発見したときのみファイルを作成
@@ -181,7 +181,6 @@ public class serial_correlation {
 				}
 			}
 			pw.close();
-
 		}
 	}
 }
