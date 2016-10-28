@@ -61,18 +61,27 @@ public class serial_correlation {
 			PrintWriter pw2 = new PrintWriter(new BufferedWriter(new FileWriter(file2)));
 			pw1.println("bid_t,bid_t+1,ask_t,ask_t+1,");
 			pw2.println("bid_t,bid_t+1,ask_t,ask_t+1,");
-			for (int r = 0; r < Math.max(bidseries.size(), askseries.size()) - 1; r++) {
-				try {
+			int maxrow = 0;
+			int minrow = 0;
+			if (bidseries.size() < askseries.size()) {
+				maxrow = askseries.size() - 1;
+				minrow = bidseries.size() - 1;
+			} else {
+				maxrow = bidseries.size() - 1;
+				minrow = askseries.size() - 1;
+			}
+			for (int r = 0; r < maxrow; r++) {
+				if (r < minrow) {
 					pw1.println(bidseries.get(r) + "," + bidseries.get(r + 1) + "," + askseries.get(r) + ","
 							+ askseries.get(r + 1) + ",");
 					pw2.println((((Integer) bidseries.get(r)).intValue() + 5 * (2 * Math.random() - 1)) + ","
 							+ (((Integer) bidseries.get(r + 1)).intValue() + 5 * (2 * Math.random() - 1)) + ","
 							+ (((Integer) askseries.get(r)).intValue() + 5 * (2 * Math.random() - 1)) + ","
 							+ (((Integer) askseries.get(r + 1)).intValue() + 5 * (2 * Math.random() - 1)) + ",");
-				} catch (IndexOutOfBoundsException e) {
+				} else {
 					if (bidseries.size() < askseries.size()) {
-						pw1.println(",,," + askseries.get(r) + "," + askseries.get(r + 1) + ",");
-						pw2.println(",,," + (((Integer) askseries.get(r)).intValue() + 5 * (2 * Math.random() - 1))
+						pw1.println(",," + askseries.get(r) + "," + askseries.get(r + 1) + ",");
+						pw2.println(",," + (((Integer) askseries.get(r)).intValue() + 5 * (2 * Math.random() - 1))
 								+ "," + (((Integer) askseries.get(r + 1)).intValue() + 5 * (2 * Math.random() - 1))
 								+ ",");
 					} else {
@@ -92,7 +101,7 @@ public class serial_correlation {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2006";
+		String datayear = "\\2007";
 		String datadir = "\\rawcsv_2\\daily";
 		String writedir = "\\correlation";
 		// エラーを発見したときのみファイルを作成
@@ -116,6 +125,9 @@ public class serial_correlation {
 		if (!file2.exists()) {
 			file2.mkdirs();
 		}
+		File file3 = new File(currentdir + datayear + writedir + "\\correlation.csv");
+		PrintWriter pw3 = new PrintWriter(new BufferedWriter(new FileWriter(file3)));
+		pw3.println("date,bid,ask,");
 
 		for (int i = 0; i < filelist.length; i++) {
 
@@ -158,6 +170,7 @@ public class serial_correlation {
 				if (Arrays.asList(closing).contains(time) && line.split(",", -1)[2].equals("Trade")) {
 					if (Integer.parseInt(rfiledate) < 20110214 && !(i == 0 || i == filelist.length - 1)) {
 						if (morning) {
+							pw3.println(rfiledate + "," + correlation(bidseries) + "," + correlation(askseries) + ",");
 							System.out.println("bid: " + correlation(bidseries) + ", ask: " + correlation(askseries));
 							file1 = new File(
 									currentdir + datayear + writedir + "\\daily\\" + rfiledate + "_morning_.csv");
@@ -168,6 +181,7 @@ public class serial_correlation {
 							askseries = new ArrayList<Integer>(); // initialize
 							morning = false;
 						} else {
+							pw3.println(rfiledate + "," + correlation(bidseries) + "," + correlation(askseries) + ",");
 							System.out.println("bid: " + correlation(bidseries) + ", ask: " + correlation(askseries));
 							file1 = new File(
 									currentdir + datayear + writedir + "\\daily\\" + rfiledate + "_afternoon_.csv");
@@ -176,6 +190,7 @@ public class serial_correlation {
 							writefile(file1, file2, bidseries, askseries);
 						}
 					} else {
+						pw3.println(rfiledate + "," + correlation(bidseries) + "," + correlation(askseries) + ",");
 						System.out.println("bid: " + correlation(bidseries) + ", ask: " + correlation(askseries));
 						file1 = new File(currentdir + datayear + writedir + "\\daily\\" + rfiledate + "_.csv");
 						file2 = new File(
@@ -207,5 +222,6 @@ public class serial_correlation {
 			brtxt.close();
 			fr.close();
 		}
+		pw3.close();
 	}
 }
