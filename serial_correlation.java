@@ -54,10 +54,45 @@ public class serial_correlation {
 		return cov / Math.sqrt(var1 * var2);
 	}
 
+	private static void writefile(File file1, File file2, ArrayList bidseries, ArrayList askseries) {
+
+		try {
+			PrintWriter pw1 = new PrintWriter(new BufferedWriter(new FileWriter(file1)));
+			PrintWriter pw2 = new PrintWriter(new BufferedWriter(new FileWriter(file2)));
+			pw1.println("bid_t,bid_t+1,ask_t,ask_t+1,");
+			pw2.println("bid_t,bid_t+1,ask_t,ask_t+1,");
+			for (int r = 0; r < Math.max(bidseries.size(), askseries.size()) - 1; r++) {
+				try {
+					pw1.println(bidseries.get(r) + "," + bidseries.get(r + 1) + "," + askseries.get(r) + ","
+							+ askseries.get(r + 1) + ",");
+					pw2.println((((Integer) bidseries.get(r)).intValue() + 5 * (2 * Math.random() - 1)) + ","
+							+ (((Integer) bidseries.get(r + 1)).intValue() + 5 * (2 * Math.random() - 1)) + ","
+							+ (((Integer) askseries.get(r)).intValue() + 5 * (2 * Math.random() - 1)) + ","
+							+ (((Integer) askseries.get(r + 1)).intValue() + 5 * (2 * Math.random() - 1)) + ",");
+				} catch (IndexOutOfBoundsException e) {
+					if (bidseries.size() < askseries.size()) {
+						pw1.println(",,," + askseries.get(r) + "," + askseries.get(r + 1) + ",");
+						pw2.println(",,," + (((Integer) askseries.get(r)).intValue() + 5 * (2 * Math.random() - 1))
+								+ "," + (((Integer) askseries.get(r + 1)).intValue() + 5 * (2 * Math.random() - 1))
+								+ ",");
+					} else {
+						pw1.println(bidseries.get(r) + "," + bidseries.get(r + 1) + ",,,");
+						pw2.println((((Integer) bidseries.get(r)).intValue() + 5 * (2 * Math.random() - 1)) + ","
+								+ (((Integer) bidseries.get(r + 1)).intValue() + 5 * (2 * Math.random() - 1)) + ",,,");
+					}
+				}
+			}
+			pw1.close();
+			pw2.close();
+		} catch (IOException e) {
+			;
+		}
+	}
+
 	public static void main(String[] args) throws IOException {
 
-		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\plate_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2007";
+		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
+		String datayear = "\\2006";
 		String datadir = "\\rawcsv_2\\daily";
 		String writedir = "\\correlation";
 		// エラーを発見したときのみファイルを作成
@@ -71,6 +106,16 @@ public class serial_correlation {
 
 		File rfilepath = new File(currentdir + datayear + datadir); // 読み込むファイルのディレクトリのパス．
 		File[] filelist = rfilepath.listFiles(); // 読み込むファイル名を取得する．
+
+		// 書き出すファイルをしまうフォルダを用意する．
+		File file1 = new File(currentdir + datayear + writedir + "\\daily\\");
+		if (!file1.exists()) {
+			file1.mkdirs();
+		}
+		File file2 = new File(currentdir + datayear + writedir + "\\scattered\\");
+		if (!file2.exists()) {
+			file2.mkdirs();
+		}
 
 		for (int i = 0; i < filelist.length; i++) {
 
@@ -90,15 +135,19 @@ public class serial_correlation {
 			int asktemp = 0; // 売り気配値を一時保存
 			ArrayList<Integer> bidseries = new ArrayList<Integer>(); // 最良買い気配値
 			ArrayList<Integer> askseries = new ArrayList<Integer>(); // 最良売り気配値
+
 			String time = ""; // 時刻
 			String[] closing = new String[2];
-			if (Integer.parseInt(rfiledate) < 20110214) {
+			if (Integer.parseInt(rfiledate) < 20110214 && !(i == 0 || i == filelist.length - 1)) {
 				closing[0] = "1100";
 				closing[1] = "1510";
+			} else if (Integer.parseInt(rfiledate) < 20090130 && (i == 0 || i == filelist.length - 1)) {
+				closing[0] = "1110";
 			} else {
 				closing[0] = "1510";
 			}
 			boolean continuous = false; // ザラバを判定する．場中はtrue.
+			boolean morning = true; // 前場と後場で分かれているならtrue.ファイル分割のため．
 
 			while ((line = brtxt.readLine()) != null) {
 
@@ -106,7 +155,33 @@ public class serial_correlation {
 				if (line.split(",", -1)[9].equals("  1")) {
 					continuous = true;
 				}
-				if (Arrays.asList(closing).contains(time)) {
+				if (Arrays.asList(closing).contains(time) && line.split(",", -1)[2].equals("Trade")) {
+					if (Integer.parseInt(rfiledate) < 20110214 && !(i == 0 || i == filelist.length - 1)) {
+						if (morning) {
+							System.out.println("bid: " + correlation(bidseries) + ", ask: " + correlation(askseries));
+							file1 = new File(
+									currentdir + datayear + writedir + "\\daily\\" + rfiledate + "_morning_.csv");
+							file2 = new File(currentdir + datayear + writedir + "\\scattered\\" + rfiledate
+									+ "_morning_scattered_.csv");
+							writefile(file1, file2, bidseries, askseries);
+							bidseries = new ArrayList<Integer>(); // initialize
+							askseries = new ArrayList<Integer>(); // initialize
+							morning = false;
+						} else {
+							System.out.println("bid: " + correlation(bidseries) + ", ask: " + correlation(askseries));
+							file1 = new File(
+									currentdir + datayear + writedir + "\\daily\\" + rfiledate + "_afternoon_.csv");
+							file2 = new File(currentdir + datayear + writedir + "\\scattered\\" + rfiledate
+									+ "_afternoon_scattered_.csv");
+							writefile(file1, file2, bidseries, askseries);
+						}
+					} else {
+						System.out.println("bid: " + correlation(bidseries) + ", ask: " + correlation(askseries));
+						file1 = new File(currentdir + datayear + writedir + "\\daily\\" + rfiledate + "_.csv");
+						file2 = new File(
+								currentdir + datayear + writedir + "\\scattered\\" + rfiledate + "_scattered_.csv");
+						writefile(file1, file2, bidseries, askseries);
+					}
 					continuous = false;
 				}
 
@@ -129,56 +204,8 @@ public class serial_correlation {
 					}
 				}
 			}
-
-			System.out.println("bid: " + correlation(bidseries) + "::: ask: " + correlation(askseries));
 			brtxt.close();
 			fr.close();
-
-			File file = new File(currentdir + datayear + writedir + "\\daily\\");
-			if (!file.exists()) {
-				file.mkdirs();
-			}
-			file = new File(currentdir + datayear + writedir + "\\daily\\" + rfiledate + "_.csv");
-			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
-			pw.println("bid_t,bid_t+1,ask_t,ask_t+1,");
-			for (int r = 0; r < Math.max(bidseries.size(), askseries.size()) - 1; r++) {
-				try {
-					pw.println(bidseries.get(r) + "," + bidseries.get(r + 1) + "," + askseries.get(r) + ","
-							+ askseries.get(r + 1) + ",");
-				} catch (IndexOutOfBoundsException e) {
-					if (bidseries.size() < askseries.size()) {
-						pw.println(",,," + askseries.get(r) + "," + askseries.get(r + 1) + ",");
-					} else {
-						pw.println(bidseries.get(r) + "," + bidseries.get(r + 1) + ",,,");
-					}
-				}
-			}
-			pw.close();
-
-			file = new File(currentdir + datayear + writedir + "\\scattered\\");
-			if (!file.exists()) {
-				file.mkdirs();
-			}
-			file = new File(currentdir + datayear + writedir + "\\scattered\\" + rfiledate + "_scattered_.csv");
-			pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
-			pw.println("bid_t,bid_t+1,ask_t,ask_t+1,");
-			for (int r = 0; r < Math.max(bidseries.size(), askseries.size()) - 1; r++) {
-				try {
-					pw.println((bidseries.get(r) + 5 * (2 * Math.random() - 1)) + ","
-							+ (bidseries.get(r + 1) + 5 * (2 * Math.random() - 1)) + ","
-							+ (askseries.get(r) + 5 * (2 * Math.random() - 1)) + ","
-							+ (askseries.get(r + 1) + 5 * (2 * Math.random() - 1)) + ",");
-				} catch (IndexOutOfBoundsException e) {
-					if (bidseries.size() < askseries.size()) {
-						pw.println(",,," + (askseries.get(r) + 5 * (2 * Math.random() - 1)) + ","
-								+ (askseries.get(r + 1) + 5 * (2 * Math.random() - 1)) + ",");
-					} else {
-						pw.println((bidseries.get(r) + 5 * (2 * Math.random() - 1)) + ","
-								+ (bidseries.get(r + 1) + 5 * (2 * Math.random() - 1)) + ",,,");
-					}
-				}
-			}
-			pw.close();
 		}
 	}
 }

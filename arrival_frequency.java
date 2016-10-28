@@ -164,7 +164,8 @@ public class arrival_frequency {
 						askdepth = Integer.parseInt(line.split(",", -1)[8]); // 最良売り気配数量を更新
 
 						if (market_buy_order) {
-							// 直前に買いの成行注文が入ったら，更新後の最良買い気配値と約定価格が等しい場合 → 板が上に移動
+							// 直前に買いの成行注文が入ったら，
+							// 更新後の最良買い気配値と約定価格が等しい場合 → 板が上に移動
 							if (tradeprice == bidprice) {
 								market_buy_order = false;
 								pieces_market_buy.add(tradevolume + biddepth);
@@ -174,7 +175,8 @@ public class arrival_frequency {
 							}
 						}
 						if (market_sell_order) {
-							// 直前に売りの成行注文が入ったら，更新後の最良売り気配値と約定価格が等しい場合 → 板が下に移動
+							// 直前に売りの成行注文が入ったら，
+							// 更新後の最良売り気配値と約定価格が等しい場合 → 板が下に移動
 							if (tradeprice == askprice) {
 								market_sell_order = false;
 								pieces_market_sell.add(tradevolume + askdepth);
