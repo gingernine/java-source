@@ -1,7 +1,10 @@
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -27,17 +30,18 @@ public class arrival_frequency {
 
 	private static void count(ArrayList<Integer> list) {
 		// 回数を数えるリストで系列を作成するために，リストの最後尾に更新した回数を追加する．
-		int last = 0;
-		try {
-			last = ((Integer) list.get(list.size() - 1)).intValue();
-		} catch (ArrayIndexOutOfBoundsException ignored) {
-		}
-		list.add((last + 1));
+		int lastval = getlast(list);
+		list.add((lastval + 1));
 	}
 
 	private static int getlast(ArrayList<Integer> list) {
 		// リストの最後の要素を取り出す．
-		return list.get(list.size() - 1);
+		int lastval = 0;
+		try {
+			lastval = ((Integer) list.get(list.size() - 1)).intValue();
+		} catch (ArrayIndexOutOfBoundsException ignored) {
+		}
+		return lastval;
 	}
 
 	private static double mean(ArrayList<Integer> list) {
@@ -54,12 +58,12 @@ public class arrival_frequency {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2006";
+		String datayear = "\\2007";
 		String datadir = "\\price_or_depth_change\\daily";
 		String writedir = "\\statistics_of_the_limit_order_book"; // 書き込みファイル
 		File newdir = new File(currentdir + writedir);
 		if (!newdir.exists()) {
-			// newdir.mkdirs();
+			newdir.mkdirs();
 		}
 		String rfilename;
 		String rfiledate; // 読み込むファイルの日付を格納する．
@@ -67,10 +71,14 @@ public class arrival_frequency {
 		File rfilepath = new File(currentdir + datayear + datadir); // 読み込むファイルのディレクトリのパス．
 		File[] filelist = rfilepath.listFiles(); // 読み込むファイル名を取得する．
 
-		// File file = new File(currentdir + writedir + datayear + "_.csv");
-		// PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
-		// File errorfile = new File(currentdir + writedir + errordir + datayear + "_.csv");
-		// PrintWriter errorpw = new PrintWriter(new BufferedWriter(new FileWriter(errorfile)));
+		File file = new File(currentdir + writedir + datayear + "_.csv");
+		PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
+		pw.println("date, Arrival Frequency of Market Buy Orders, Arrival Frequency of Market sell Orders,"
+				+ "Arrival Frequency of limit Buy Orders, Arrival Frequency of limit sell Orders,"
+				+ "Averege Pieces of One Market Buy Order, Averege Pieces of One Market sell Order,"
+				+ "Averege Pieces of One limit Buy Order, Averege Pieces of One limit sell Order,"
+				+ "Upmovement Times Of the Best Bid, Downmovement Times Of the Best Bid,"
+				+ "Upmovement Times Of the Best Ask, Downmovement Times Of the Best Ask,");
 
 		for (int i = 0; i < filelist.length; i++) {
 
@@ -124,18 +132,12 @@ public class arrival_frequency {
 					continuous = true;
 				}
 				if (Arrays.asList(closing).contains(time) && line.split(",", -1)[2].equals("Trade")) {
-					System.out.println("freq_market_buy: " + getlast(freq_market_buy) +
-							", freq_market_sell: " + getlast(freq_market_sell));
-					System.out.println("freq_limit_buy: " + getlast(freq_limit_buy) +
-							", freq_limit_sell: " + getlast(freq_limit_sell));
-					System.out.println("average_market_buy: " + mean(pieces_market_buy) +
-							", average_market_sell: " + mean(pieces_market_sell));
-					System.out.println("average_limit_buy: " + mean(pieces_limit_buy) +
-							", average_limit_sell: " + mean(pieces_limit_sell));
-					System.out.println("up_times_bid: " + getlast(up_times_bid) +
-							", down_times_bid: " + getlast(down_times_bid));
-					System.out.println("up_times_ask: " + getlast(up_times_ask) +
-							", down_times_ask: " + getlast(down_times_ask));
+					pw.println(rfiledate + "," + getlast(freq_market_buy) + "," + getlast(freq_market_sell) +
+							"," + getlast(freq_limit_buy) + "," + getlast(freq_limit_sell) +
+							"," + mean(pieces_market_buy) + "," + mean(pieces_market_sell) +
+							"," + mean(pieces_limit_buy) + "," + mean(pieces_limit_sell) +
+							"," + getlast(up_times_bid) + "," + getlast(down_times_bid) +
+							"," + getlast(up_times_ask) + "," + getlast(down_times_ask));
 
 					// initialize
 					freq_market_buy    = new ArrayList<Integer>();
@@ -246,12 +248,9 @@ public class arrival_frequency {
 					}
 				}
 			}
-
 			brtxt.close();
 			fr.close();
-
 		}
-		// pw.close();
-		// errorpw.close();
+		pw.close();
 	}
 }
