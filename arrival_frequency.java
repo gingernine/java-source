@@ -25,7 +25,22 @@ import java.util.Arrays;
 // 使用データは，ザラバ(continuous session) のみ．(寄付直後～場の最終約定直前)
 public class arrival_frequency {
 
-	private static double mean(ArrayList list) {
+	private static void count(ArrayList<Integer> list) {
+		// 回数を数えるリストで系列を作成するために，リストの最後尾に更新した回数を追加する．
+		int last = 0;
+		try {
+			last = ((Integer) list.get(list.size() - 1)).intValue();
+		} catch (ArrayIndexOutOfBoundsException ignored) {
+		}
+		list.add((last + 1));
+	}
+
+	private static int getlast(ArrayList<Integer> list) {
+		// リストの最後の要素を取り出す．
+		return list.get(list.size() - 1);
+	}
+
+	private static double mean(ArrayList<Integer> list) {
 		// リスト内要素の平均値を計算する．
 		int n = list.size();
 		int sum = 0;
@@ -69,25 +84,24 @@ public class arrival_frequency {
 			String line = "";
 
 			// データ抽出に使う変数の定義．
-			int freq_market_buy = 0; // arrival frequency of market buy order
-			int freq_market_sell = 0; // arrival frequency of market sell order
-			int freq_limit_buy = 0; // arrival frequency of limit buy order
-			int freq_limit_sell = 0; // arrival frequency of limit sell order
-			ArrayList<Integer> pieces_market_buy = new ArrayList<Integer>(); // average piecese of one market buy order
+			ArrayList<Integer> freq_market_buy    = new ArrayList<Integer>(); // arrival frequency of market buy order
+			ArrayList<Integer> freq_market_sell   = new ArrayList<Integer>(); // arrival frequency of market sell order
+			ArrayList<Integer> freq_limit_buy     = new ArrayList<Integer>(); // arrival frequency of limit buy order
+			ArrayList<Integer> freq_limit_sell    = new ArrayList<Integer>(); // arrival frequency of limit sell order
+			ArrayList<Integer> pieces_market_buy  = new ArrayList<Integer>(); // average piecese of one market buy order
 			ArrayList<Integer> pieces_market_sell = new ArrayList<Integer>(); // average piecese of one market sell order
-			ArrayList<Integer> pieces_limit_buy = new ArrayList<Integer>(); // average piecese of one limit buy order
-			ArrayList<Integer> pieces_limit_sell = new ArrayList<Integer>(); // average piecese of one limit sell order
-			int up_times_bid = 0; // upmovement times of the best bid
-			int down_times_bid = 0; // downmovement times of the best bid
-			int up_times_ask = 0; // upmovement times of the best ask
-			int down_times_ask = 0; // downmovement times of the best ask
+			ArrayList<Integer> pieces_limit_buy   = new ArrayList<Integer>(); // average piecese of one limit buy order
+			ArrayList<Integer> pieces_limit_sell  = new ArrayList<Integer>(); // average piecese of one limit sell order
+			ArrayList<Integer> up_times_bid       = new ArrayList<Integer>(); // upmovement times of the best bid
+			ArrayList<Integer> down_times_bid     = new ArrayList<Integer>(); // downmovement times of the best bid
+			ArrayList<Integer> up_times_ask       = new ArrayList<Integer>(); // upmovement times of the best ask
+			ArrayList<Integer> down_times_ask     = new ArrayList<Integer>(); // downmovement times of the best ask
 			int bidprice = 0; // 最良買い気配値
 			int askprice = 0; // 最良売り気配値
 			int biddepth = 0; // 最良買い気配にかかる数量
 			int askdepth = 0; // 最良売り気配にかかる数量
 			int tradeprice = 0; // 約定価格
 			int tradevolume = 0; // 約定数量
-			ArrayList<String> error = new ArrayList<String>();
 			String time = ""; // 時刻
 			String[] closing = new String[2];
 			if (Integer.parseInt(rfiledate) < 20110214 && !(i == 0 || i == filelist.length - 1)) {
@@ -110,28 +124,32 @@ public class arrival_frequency {
 					continuous = true;
 				}
 				if (Arrays.asList(closing).contains(time) && line.split(",", -1)[2].equals("Trade")) {
-					System.out.println("freq_market_buy: " + freq_market_buy + ", freq_market_sell: " + freq_market_sell);
-					System.out.println("freq_limit_buy: " + freq_limit_buy + ", freq_limit_sell: " + freq_limit_sell);
+					System.out.println("freq_market_buy: " + getlast(freq_market_buy) +
+							", freq_market_sell: " + getlast(freq_market_sell));
+					System.out.println("freq_limit_buy: " + getlast(freq_limit_buy) +
+							", freq_limit_sell: " + getlast(freq_limit_sell));
 					System.out.println("average_market_buy: " + mean(pieces_market_buy) +
 							", average_market_sell: " + mean(pieces_market_sell));
 					System.out.println("average_limit_buy: " + mean(pieces_limit_buy) +
 							", average_limit_sell: " + mean(pieces_limit_sell));
-					System.out.println("up_times_bid: " + up_times_bid + ", down_times_bid: " + down_times_bid);
-					System.out.println("up_times_ask: " + up_times_ask + ", down_times_ask: " + down_times_ask);
+					System.out.println("up_times_bid: " + getlast(up_times_bid) +
+							", down_times_bid: " + getlast(down_times_bid));
+					System.out.println("up_times_ask: " + getlast(up_times_ask) +
+							", down_times_ask: " + getlast(down_times_ask));
 
 					// initialize
-					freq_market_buy = 0;
-					freq_market_sell = 0;
-					freq_limit_buy = 0;
-					freq_limit_sell = 0;
-					pieces_market_buy = new ArrayList<Integer>();
+					freq_market_buy    = new ArrayList<Integer>();
+					freq_market_sell   = new ArrayList<Integer>();
+					freq_limit_buy     = new ArrayList<Integer>();
+					freq_limit_sell    = new ArrayList<Integer>();
+					pieces_market_buy  = new ArrayList<Integer>();
 					pieces_market_sell = new ArrayList<Integer>();
-					pieces_limit_buy = new ArrayList<Integer>();
-					pieces_limit_sell = new ArrayList<Integer>();
-					up_times_bid = 0;
-					down_times_bid = 0;
-					up_times_ask = 0;
-					down_times_ask = 0;
+					pieces_limit_buy   = new ArrayList<Integer>();
+					pieces_limit_sell  = new ArrayList<Integer>();
+					up_times_bid       = new ArrayList<Integer>();
+					down_times_bid     = new ArrayList<Integer>();
+					up_times_ask       = new ArrayList<Integer>();
+					down_times_ask     = new ArrayList<Integer>();
 					continuous = false;
 					isInit = true;
 					market_buy_order = false;
@@ -156,18 +174,18 @@ public class arrival_frequency {
 						if (Integer.parseInt(line.split(",", -1)[6]) > biddepth) {
 							// 買い気配数量が増加したら買いの指値注文として数える．
 							// 増加分は指値注文数として記録する．
-							freq_limit_buy++;
+							count(freq_limit_buy);
 							pieces_limit_buy.add(Integer.parseInt(line.split(",", -1)[6]) - biddepth);
 						}
 						if (Integer.parseInt(line.split(",", -1)[8]) > askdepth) {
 							// 売り気配数量が増加したら売りの指値注文として数える．
 							// 増加分は指値注文数として記録する．
-							freq_limit_sell++;
+							count(freq_limit_sell);
 							pieces_limit_sell.add(Integer.parseInt(line.split(",", -1)[8]) - askdepth);
 						}
 						if (Integer.parseInt(line.split(",", -1)[5]) > bidprice) {
 							// 最良買い気配値が上に変化した場合．
-							up_times_bid++;
+							count(up_times_bid);
 							if (market_buy_order) {
 								// 直前に買いの成行注文が入ったら，
 								// 更新後の最良買い気配値と約定価格が等しい場合 → 板が上に移動
@@ -177,15 +195,15 @@ public class arrival_frequency {
 						}
 						if (Integer.parseInt(line.split(",", -1)[5]) < bidprice) {
 							// 最良買い気配値が下に変化した場合．
-							down_times_bid++;
+							count(down_times_bid);
 						}
 						if (Integer.parseInt(line.split(",", -1)[7]) > askprice) {
 							// 最良売り気配値が上に変化した場合．
-							up_times_ask++;
+							count(up_times_ask);
 						}
 						if (Integer.parseInt(line.split(",", -1)[7]) < askprice) {
 							// 最良売り気配値が下に変化した場合．
-							down_times_ask++;
+							count(down_times_ask);
 							if (market_sell_order) {
 								// 直前に売りの成行注文が入ったら，
 								// 更新後の最良売り気配値と約定価格が等しい場合 → 板が下に移動
@@ -218,11 +236,11 @@ public class arrival_frequency {
 						tradevolume = Integer.parseInt(line.split(",", -1)[4]);
 						if (tradeprice >= askprice) {
 							// 約定価格が直前のbest ask に等しい又は高いなら，買いの成行注文として数える．
-							freq_market_buy++;
+							count(freq_market_buy);
 							market_buy_order = true;
 						} else if (tradeprice <= bidprice) {
 							// 約定価格が直前のbest bid に等しい又は低いなら，売りの成行注文として数える．
-							freq_market_sell++;
+							count(freq_market_sell);
 							market_sell_order = true;
 						}
 					}
@@ -232,10 +250,6 @@ public class arrival_frequency {
 			brtxt.close();
 			fr.close();
 
-			//while (true) {
-				//BufferedReader b = new BufferedReader(new InputStreamReader( System.in ));
-				//if (b.readLine().equals("")) break;
-			//}
 		}
 		// pw.close();
 		// errorpw.close();
