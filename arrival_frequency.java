@@ -51,7 +51,6 @@ public class arrival_frequency {
 		for (int j = 0; j < n; j++) {
 			sum = sum + ((Integer) list.get(j)).intValue();
 		}
-
 		return (double) sum / n;
 	}
 
