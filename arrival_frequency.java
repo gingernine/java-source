@@ -42,7 +42,6 @@ public class arrival_frequency {
 		String datayear = "\\2006";
 		String datadir = "\\price_or_depth_change\\daily";
 		String writedir = "\\statistics_of_the_limit_order_book"; // 書き込みファイル
-		String errordir = "\\NumberFormatException";
 		File newdir = new File(currentdir + writedir);
 		if (!newdir.exists()) {
 			// newdir.mkdirs();
@@ -111,7 +110,32 @@ public class arrival_frequency {
 					continuous = true;
 				}
 				if (Arrays.asList(closing).contains(time) && line.split(",", -1)[2].equals("Trade")) {
+					System.out.println("freq_market_buy: " + freq_market_buy + ", freq_market_sell: " + freq_market_sell);
+					System.out.println("freq_limit_buy: " + freq_limit_buy + ", freq_limit_sell: " + freq_limit_sell);
+					System.out.println("average_market_buy: " + mean(pieces_market_buy) +
+							", average_market_sell: " + mean(pieces_market_sell));
+					System.out.println("average_limit_buy: " + mean(pieces_limit_buy) +
+							", average_limit_sell: " + mean(pieces_limit_sell));
+					System.out.println("up_times_bid: " + up_times_bid + ", down_times_bid: " + down_times_bid);
+					System.out.println("up_times_ask: " + up_times_ask + ", down_times_ask: " + down_times_ask);
+
+					// initialize
+					freq_market_buy = 0;
+					freq_market_sell = 0;
+					freq_limit_buy = 0;
+					freq_limit_sell = 0;
+					pieces_market_buy = new ArrayList<Integer>();
+					pieces_market_sell = new ArrayList<Integer>();
+					pieces_limit_buy = new ArrayList<Integer>();
+					pieces_limit_sell = new ArrayList<Integer>();
+					up_times_bid = 0;
+					down_times_bid = 0;
+					up_times_ask = 0;
+					down_times_ask = 0;
 					continuous = false;
+					isInit = true;
+					market_buy_order = false;
+					market_sell_order = false;
 				}
 
 				if (continuous && isInit) {
@@ -144,6 +168,12 @@ public class arrival_frequency {
 						if (Integer.parseInt(line.split(",", -1)[5]) > bidprice) {
 							// 最良買い気配値が上に変化した場合．
 							up_times_bid++;
+							if (market_buy_order) {
+								// 直前に買いの成行注文が入ったら，
+								// 更新後の最良買い気配値と約定価格が等しい場合 → 板が上に移動
+								pieces_market_buy.add(tradevolume + Integer.parseInt(line.split(",", -1)[6]));
+								market_buy_order = false;
+							}
 						}
 						if (Integer.parseInt(line.split(",", -1)[5]) < bidprice) {
 							// 最良買い気配値が下に変化した場合．
@@ -156,6 +186,12 @@ public class arrival_frequency {
 						if (Integer.parseInt(line.split(",", -1)[7]) < askprice) {
 							// 最良売り気配値が下に変化した場合．
 							down_times_ask++;
+							if (market_sell_order) {
+								// 直前に売りの成行注文が入ったら，
+								// 更新後の最良売り気配値と約定価格が等しい場合 → 板が下に移動
+								pieces_market_sell.add(tradevolume + Integer.parseInt(line.split(",", -1)[8]));
+								market_sell_order = false;
+							}
 						}
 
 						bidprice = Integer.parseInt(line.split(",", -1)[5]); // 最良買い気配値を更新
@@ -164,26 +200,12 @@ public class arrival_frequency {
 						askdepth = Integer.parseInt(line.split(",", -1)[8]); // 最良売り気配数量を更新
 
 						if (market_buy_order) {
-							// 直前に買いの成行注文が入ったら，
-							// 更新後の最良買い気配値と約定価格が等しい場合 → 板が上に移動
-							if (tradeprice == bidprice) {
-								market_buy_order = false;
-								pieces_market_buy.add(tradevolume + biddepth);
-							} else {
-								market_buy_order = false;
-								pieces_market_buy.add(tradevolume);
-							}
+							pieces_market_buy.add(tradevolume);
+							market_buy_order = false;
 						}
 						if (market_sell_order) {
-							// 直前に売りの成行注文が入ったら，
-							// 更新後の最良売り気配値と約定価格が等しい場合 → 板が下に移動
-							if (tradeprice == askprice) {
-								market_sell_order = false;
-								pieces_market_sell.add(tradevolume + askdepth);
-							} else {
-								market_sell_order = false;
-								pieces_market_sell.add(tradevolume);
-							}
+							pieces_market_sell.add(tradevolume);
+							market_sell_order = false;
 						}
 					}
 
@@ -207,22 +229,13 @@ public class arrival_frequency {
 				}
 			}
 
-			System.out.println("freq_market_buy: " + freq_market_buy + ", freq_market_sell: " + freq_market_sell);
-			System.out.println("freq_limit_buy: " + freq_limit_buy + ", freq_limit_sell: " + freq_limit_sell);
-			System.out.println("average_market_buy: " + mean(pieces_market_buy) +
-					", average_market_sell: " + mean(pieces_market_sell));
-			System.out.println("average_limit_buy: " + mean(pieces_limit_buy) +
-					", average_limit_sell: " + mean(pieces_limit_sell));
-			System.out.println("up_times_bid: " + up_times_bid + ", down_times_bid: " + down_times_bid);
-			System.out.println("up_times_ask: " + up_times_ask + ", down_times_ask: " + down_times_ask);
 			brtxt.close();
 			fr.close();
 
-			while (true) {
-				// BufferedReader b = new BufferedReader(new InputStreamReader( System.in ));
-				// if (b.readLine().equals(""))
-				break;
-			}
+			//while (true) {
+				//BufferedReader b = new BufferedReader(new InputStreamReader( System.in ));
+				//if (b.readLine().equals("")) break;
+			//}
 		}
 		// pw.close();
 		// errorpw.close();

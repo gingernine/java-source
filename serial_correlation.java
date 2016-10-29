@@ -11,7 +11,7 @@ import java.util.Arrays;
 // 売り/買い気配の価格の変動について系列相関を計算する．
 public class serial_correlation {
 
-	private static double correlation(ArrayList series) {
+	private static double correlation(ArrayList<Integer> series) {
 		// num で価格の系列を取得する．取得した系列について，期を一つずらした系列を作り，numの系列との相関(系列相関)を計算する．
 
 		// 計算に必要な変数の定義
@@ -54,7 +54,7 @@ public class serial_correlation {
 		return cov / Math.sqrt(var1 * var2);
 	}
 
-	private static void writefile(File file1, File file2, ArrayList bidseries, ArrayList askseries) {
+	private static void writefile(File file1, File file2, ArrayList<Integer> bidseries, ArrayList<Integer> askseries) {
 
 		try {
 			PrintWriter pw1 = new PrintWriter(new BufferedWriter(new FileWriter(file1)));
