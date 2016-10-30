@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 // raw 及び raw_daily フォルダには一日のデータが複数ファイルに分割されているので各日のファイルに統合する．
-public class nikkei_daily {
+public class merge {
 
 	private static ArrayList<String> filesort(Map<Integer, String> paths) {
 		// 日ごとにファイル名を個別番号でソートする．

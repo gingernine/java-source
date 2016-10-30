@@ -72,12 +72,12 @@ public class arrival_frequency {
 
 		File file = new File(currentdir + writedir + datayear + "_.csv");
 		PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
-		pw.println("date, Arrival Frequency of Market Buy Orders, Arrival Frequency of Market sell Orders,"
-				+ "Arrival Frequency of limit Buy Orders, Arrival Frequency of limit sell Orders,"
-				+ "Averege Pieces of One Market Buy Order, Averege Pieces of One Market sell Order,"
-				+ "Averege Pieces of One limit Buy Order, Averege Pieces of One limit sell Order,"
-				+ "Upmovement Times Of the Best Bid, Downmovement Times Of the Best Bid,"
-				+ "Upmovement Times Of the Best Ask, Downmovement Times Of the Best Ask,");
+		pw.println("date, Arrival Frequency of Market Buy Orders,Arrival Frequency of Market sell Orders,"
+				+ "Arrival Frequency of limit Buy Orders,Arrival Frequency of limit sell Orders,"
+				+ "Averege Pieces of One Market Buy Order,Averege Pieces of One Market sell Order,"
+				+ "Averege Pieces of One limit Buy Order,Averege Pieces of One limit sell Order,"
+				+ "Upmovement Times Of the Best Bid,Downmovement Times Of the Best Bid,"
+				+ "Upmovement Times Of the Best Ask,Downmovement Times Of the Best Ask,");
 
 		for (int i = 0; i < filelist.length; i++) {
 
@@ -111,11 +111,13 @@ public class arrival_frequency {
 			int tradevolume = 0; // 約定数量
 			String time = ""; // 時刻
 			String[] closing = new String[2];
-			if (Integer.parseInt(rfiledate) < 20110214 && !(i == 0 || i == filelist.length - 1)) {
-				closing[0] = "1100";
-				closing[1] = "1510";
-			} else if (Integer.parseInt(rfiledate) < 20090130 && (i == 0 || i == filelist.length - 1)) {
-				closing[0] = "1110";
+			if (Integer.parseInt(rfiledate) < 20110214) {
+				if (Integer.parseInt(rfiledate) < 20090130 && (i == 0 || i == filelist.length - 1)) {
+					closing[0] = "1110";
+				} else {
+					closing[0] = "1100";
+					closing[1] = "1510";
+				}
 			} else {
 				closing[0] = "1510";
 			}

@@ -16,7 +16,7 @@ public class bid_more_than_ask {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2006";
+		String datayear = "\\2016";
 		String datadir = "\\rawcsv_2\\daily";
 		String writedir_more = "\\bid_more_than_ask_in_rawcsv_2"; // エラーを発見したときのみファイルを作成
 		String writedir_equal = "\\bid_equal_to_ask_in_rawcsv_2"; // エラーを発見したときのみファイルを作成
@@ -81,6 +81,7 @@ public class bid_more_than_ask {
 					continuous = true;
 				}
 				if (Arrays.asList(closing).contains(time) && line.split(",", -1)[2].equals("Trade")) {
+					System.out.println("in");
 					continuous = false;
 				}
 

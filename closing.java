@@ -11,7 +11,7 @@ public class closing {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2010";
+		String datayear = "\\2013";
 		String datadir = "\\rawcsv_2\\daily";
 		String rfilename;
 		String rfiledate; // 読み込むファイルの日付を格納する．
@@ -32,11 +32,13 @@ public class closing {
 			// データ抽出に使う変数の定義．
 			String time = ""; // 時刻
 			String[] closing = new String[2];
-			if (Integer.parseInt(rfiledate) < 20090130 && (i == 0 || i == filelist.length - 1)) {
-				closing[0] = "1110";
-			} else if (Integer.parseInt(rfiledate) < 20110214) {
-				closing[0] = "1100";
-				closing[1] = "1510";
+			if (Integer.parseInt(rfiledate) < 20110214) {
+				if (Integer.parseInt(rfiledate) < 20090130 && (i == 0 || i == filelist.length - 1)) {
+					closing[0] = "1110";
+				} else {
+					closing[0] = "1100";
+					closing[1] = "1510";
+				}
 			} else {
 				closing[0] = "1510";
 			}
