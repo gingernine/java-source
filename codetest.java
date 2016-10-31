@@ -1,6 +1,8 @@
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // test code.
 public class codetest {
@@ -32,8 +34,22 @@ public class codetest {
 		}
 	}
 
+	private static void arraytest() {
+		int i = 0;
+		int j = 0;
+
+		Map<Integer, int[]> map = new HashMap<>();
+		for (int r = 0; r < 10; r++) {
+			int[] array = {i , j};
+			map.put(r, array);
+			i = i + r;
+			System.out.println(map);
+		}
+	}
+
 	public static void main(String[] args) {
-		System.out.println(timeDiffInSeconds(113001,113005));
-		sorttest();
+		// System.out.println(timeDiffInSeconds(113001,113005));
+		// sorttest();
+		arraytest();
 	}
 }
