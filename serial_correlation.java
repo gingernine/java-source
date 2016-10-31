@@ -182,7 +182,7 @@ public class serial_correlation {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2009";
+		String datayear = "\\2006";
 		String datadir = "\\rawcsv_2\\daily";
 		String writedir = "\\correlation";
 		// String datadir = "\\price_or_depth_change\\daily";
@@ -252,6 +252,7 @@ public class serial_correlation {
 			}
 			boolean continuous = false; // ザラバを判定する．場中はtrue.
 			boolean morning = true; // 前場と後場で分かれているならtrue.ファイル分割のため．
+			String ampm = ""; // 前場と後場で別れている場合はファイル名を morning/afternoon で分ける．
 
 			while ((line = brtxt.readLine()) != null) {
 
@@ -271,36 +272,23 @@ public class serial_correlation {
 
 					if ((Integer.parseInt(rfiledate) < 20090130 && (i == 0 || i == filelist.length - 1))
 							|| Integer.parseInt(rfiledate) >= 20110214) {
-						pw3.println(rfiledate + "," + correlation(bidseries) + "," + correlation(askseries) + ",");
-						System.out.println("bid: " + correlation(bidseries) + ", ask: " + correlation(askseries));
-						file1 = new File(currentdir + datayear + writedir + "\\daily\\" + rfiledate + "_.csv");
-						file2 = new File(
-								currentdir + datayear + writedir + "\\scattered\\" + rfiledate + "_scattered_.csv");
-						filewriter1(file1, file2, bidseries, askseries);
+						ampm = "";
+					} else if (morning) {
+						ampm = "_morning";
+						morning = false;
 					} else {
-						if (morning) {
-							pw3.println(rfiledate + "," + correlation(bidseries) + "," + correlation(askseries) + ",");
-							System.out.println("bid: " + correlation(bidseries) + ", ask: " + correlation(askseries));
-							file1 = new File(
-									currentdir + datayear + writedir + "\\daily\\" + rfiledate + "_morning_.csv");
-							file2 = new File(currentdir + datayear + writedir + "\\scattered\\" + rfiledate
-									+ "_morning_scattered_.csv");
-							filewriter1(file1, file2, bidseries, askseries);
-							bidseries = new ArrayList<Integer>(); // initialize
-							askseries = new ArrayList<Integer>(); // initialize
-							bidtemp = 0;
-							asktemp = 0;
-							morning = false;
-						} else {
-							pw3.println(rfiledate + "," + correlation(bidseries) + "," + correlation(askseries) + ",");
-							System.out.println("bid: " + correlation(bidseries) + ", ask: " + correlation(askseries));
-							file1 = new File(
-									currentdir + datayear + writedir + "\\daily\\" + rfiledate + "_afternoon_.csv");
-							file2 = new File(currentdir + datayear + writedir + "\\scattered\\" + rfiledate
-									+ "_afternoon_scattered_.csv");
-							filewriter1(file1, file2, bidseries, askseries);
-						}
+						ampm = "_afternoon";
 					}
+					pw3.println(rfiledate + "," + correlation(bidseries) + "," + correlation(askseries) + ",");
+					System.out.println("bid: " + correlation(bidseries) + ", ask: " + correlation(askseries));
+					file1 = new File(currentdir + datayear + writedir + "\\daily\\" + rfiledate + ampm +"_.csv");
+					file2 = new File(currentdir + datayear + writedir + "\\scattered\\" + rfiledate
+									+ ampm + "_scattered_.csv");
+					filewriter1(file1, file2, bidseries, askseries);
+					bidseries = new ArrayList<Integer>(); // initialize
+					askseries = new ArrayList<Integer>(); // initialize
+					bidtemp = 0; // initialize
+					asktemp = 0; // initialize
 					continuous = false;
 				}
 
