@@ -15,11 +15,11 @@ import java.util.Map;
 // 売り/買い気配の価格の変動について系列相関を計算する．
 public class serial_correlation {
 
-	private static double correlation(List<Integer> series) {
+	private static double correlation(List<Integer> series, boolean span) {
 		// num で価格の系列を取得する．取得した系列について，期を一つずらした系列を作り，numの系列との相関(系列相関)を計算する．
 
 		// 計算に必要な変数の定義
-		int n = series.size() - 1; // 系列のデータ数．
+		int n = series.size(); // 系列のデータ数．
 		double series1[] = new double[n]; // num に入っている系列を double 型に変換する．
 		double series2[] = new double[n]; // time1 の系列から期を一つずらしたものを格納する．
 		double mean1 = 0.0; // time1 の系列の平均値
@@ -29,9 +29,18 @@ public class serial_correlation {
 		double cov = 0.0; // time1 と time2 の系列の不偏共分散
 
 		// time2 は time1 よりも1期だけ進んでいる．
-		for (int j = 0; j < n; j++) {
-			series1[j] = (double) ((Integer) series.get(j)).intValue();
-			series2[j] = (double) ((Integer) series.get(j + 1)).intValue();
+		int q = 0;
+		int add = 1;
+		int ext = 1;
+		if (span) {
+			// 時間間隔別のデータは2行1ペアで書き出す．これは time_span_parse 関数の描き方に因る．
+			add = 2;
+			ext = 2;
+		}
+		while(q < n - ext) {
+			series1[q] = (double) ((Integer) series.get(q)).intValue();
+			series2[q] = (double) ((Integer) series.get(q + 1)).intValue();
+			q = q + add;
 		}
 
 		// 平均値を計算する．
@@ -109,19 +118,19 @@ public class serial_correlation {
 			int maxrow = 0;
 			int minrow = 0;
 			if (bidseries.size() < askseries.size()) {
-				maxrow = askseries.size() - 1;
-				minrow = bidseries.size() - 1;
+				maxrow = askseries.size();
+				minrow = bidseries.size();
 			} else {
-				maxrow = bidseries.size() - 1;
-				minrow = askseries.size() - 1;
+				maxrow = bidseries.size();
+				minrow = askseries.size();
 			}
 			int r = 0;
 			int add = 1;
-			int ext = 0;
+			int ext = 1;
 			if (span) {
 				// 時間間隔別のデータは2行1ペアで書き出す．これは time_span_parse 関数の描き方に因る．
 				add = 2;
-				ext = 1;
+				ext = 2;
 			}
 			while (r < maxrow - ext) {
 				if (r < minrow - ext) {
@@ -187,6 +196,14 @@ public class serial_correlation {
 			file2.mkdirs();
 		}
 
+		int[] timespan = { 1, 2, 5, 15, 30, 60, 120, 300 }; //時間間隔(秒)
+		PrintWriter[] printwriters = new PrintWriter[timespan.length];
+		for (int t = 0; t < timespan.length; t++) {
+			File f = new File(currentdir + datayear + writedir + "\\correlation_" + timespan[t] + "_.csv");
+			printwriters[t] = new PrintWriter(new BufferedWriter(new FileWriter(f)));
+			printwriters[t].println("date,bid,ask,");
+		}
+
 		for (int i = 0; i < filelist.length; i++) {
 
 			rfilename = filelist[i].getAbsolutePath();
@@ -209,7 +226,7 @@ public class serial_correlation {
 			Map<Integer, int[]> ask_timestamp = new HashMap<Integer, int[]>(); // <連番, {変化時刻, 変化量}>
 			Map<Integer, List<Integer>> bid_span_amount = new HashMap<Integer, List<Integer>>(); // <変化間隔, 対応するデータのリスト>
 			Map<Integer, List<Integer>> ask_span_amount = new HashMap<Integer, List<Integer>>(); // <変化間隔, 対応するデータのリスト>
-			int[] timespan = { 1, 2, 5, 15, 30, 60, 120, 300 }; //時間間隔(秒)
+
 			int bidserial = 0; // 連想配列のキーとなる連番．
 			int askserial = 0; // 連想配列のキーとなる連番．
 
@@ -259,8 +276,8 @@ public class serial_correlation {
 					} else {
 						ampm = "_afternoon";
 					}
-					pw3.println(rfiledate + "," + correlation(bidseries) + "," + correlation(askseries) + ",");
-					System.out.println("bid: " + correlation(bidseries) + ", ask: " + correlation(askseries));
+					pw3.println(rfiledate + "," + correlation(bidseries, false) + "," + correlation(askseries, false) + ",");
+					System.out.println("bid: " + correlation(bidseries, false) + ", ask: " + correlation(askseries, false));
 					file1 = new File(currentdir + datayear + writedir + "\\daily\\" + rfiledate + ampm +"_.csv");
 					file2 = new File(currentdir + datayear + writedir + "\\scattered\\" + rfiledate
 									+ ampm + "_scattered_.csv");
@@ -269,19 +286,28 @@ public class serial_correlation {
 					bid_span_amount = time_span_parse(bid_timestamp, timespan);
 					ask_span_amount = time_span_parse(ask_timestamp, timespan);
 
-					for (int ts : timespan) {
+					for (int t = 0; t < timespan.length; t++) {
+						int ts = timespan[t];
 						file1 = new File(currentdir + datayear + writedir + "\\time_span\\daily\\" + rfiledate
 								+ ampm + "_" + ts +"_.csv");
 						file2 = new File(currentdir + datayear + writedir + "\\time_span\\scattered\\" + rfiledate
 								+ "_" + ts + "_scattered_.csv");
 						if (bid_span_amount.containsKey(ts) && ask_span_amount.containsKey(ts)) {
+							printwriters[t].println(rfiledate + "," + correlation(bid_span_amount.get(ts), true) + ","
+									+ correlation(ask_span_amount.get(ts), true) + ",");
 							filewriter(file1, file2, bid_span_amount.get(ts), ask_span_amount.get(ts), true);
 						} else {
 							if (bid_span_amount.containsKey(ts) && !ask_span_amount.containsKey(ts)) {
+								printwriters[t].println(rfiledate + "," + correlation(bid_span_amount.get(ts), true) + ","
+										+ correlation(new ArrayList<Integer>(), true) + ",");
 								filewriter(file1, file2, bid_span_amount.get(ts), new ArrayList<Integer>(), true);
 							} else if (!bid_span_amount.containsKey(ts) && ask_span_amount.containsKey(ts)) {
+								printwriters[t].println(rfiledate + "," + correlation(new ArrayList<Integer>(), true) + ","
+										+ correlation(ask_span_amount.get(ts), true) + ",");
 								filewriter(file1, file2, new ArrayList<Integer>(), ask_span_amount.get(ts), true);
 							} else {
+								printwriters[t].println(rfiledate + "," + correlation(new ArrayList<Integer>(), true) + ","
+										+ correlation(new ArrayList<Integer>(), true) + ",");
 								filewriter(file1, file2, new ArrayList<Integer>(), new ArrayList<Integer>(), true);
 							}
 						}
@@ -326,5 +352,8 @@ public class serial_correlation {
 			fr.close();
 		}
 		pw3.close();
+		for (int t = 0; t < timespan.length; t++) {
+			printwriters[t].close();
+		}
 	}
 }
