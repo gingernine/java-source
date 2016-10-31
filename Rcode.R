@@ -1,6 +1,6 @@
 
 maindir <- "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output"
-year <- "\\2006\\correlation\\"
+year <- "\\2007\\correlation\\correlation\\"
 rfilename <- paste(maindir, year, "correlation.csv", sep = "", collapse = NULL)
 
 timespan <- c( "", "1", "2", "5", "15", "30", "60", "120", "300" )
