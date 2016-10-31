@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 // 売り/買い気配の価格の変動について系列相関を計算する．
-public class serial_correlation {
+public class fluctuation_time_span {
 
 	private static double correlation(ArrayList<Integer> series) {
 		// num で価格の系列を取得する．取得した系列について，期を一つずらした系列を作り，numの系列との相関(系列相関)を計算する．
@@ -132,6 +132,11 @@ public class serial_correlation {
 			int pathlength = rfilename.split("\\_")[sep].length();
 			rfiledate = rfilename.split("\\_")[sep].substring(pathlength - 8, pathlength); // 読み込むファイルの日付を取得
 
+			if (Integer.parseInt(rfiledate) < 20060227) {
+				// 2006年2月26日までは秒のデータがない．
+				continue;
+			}
+
 			System.out.println(rfiledate);
 			FileReader fr = new FileReader(filelist[i]);
 			BufferedReader brtxt = new BufferedReader(fr);
@@ -142,10 +147,19 @@ public class serial_correlation {
 			int askprice = 0;
 			int bidtemp = 0; // 買い気配値を一時保存
 			int asktemp = 0; // 売り気配値を一時保存
-			ArrayList<Integer> bidseries = new ArrayList<Integer>(); // 最良買い気配値
-			ArrayList<Integer> askseries = new ArrayList<Integer>(); // 最良売り気配値
+			ArrayList<Integer> bidupupspan     = new ArrayList<Integer>(); // 最良気配値が上に変化してから次に上昇するまでの時間
+			ArrayList<Integer> bidupdownspan   = new ArrayList<Integer>(); // 最良気配値が上に変化してから次に下降するまでの時間
+			ArrayList<Integer> biddownupspan   = new ArrayList<Integer>(); // 最良気配値が下に変化してから次に上昇するまでの時間
+			ArrayList<Integer> biddowndownspan = new ArrayList<Integer>(); // 最良気配値が下に変化してから次に下降するまでの時間
+			ArrayList<Integer> askupupspan     = new ArrayList<Integer>(); // 最良気配値が上に変化してから次に上昇するまでの時間
+			ArrayList<Integer> askupdownspan   = new ArrayList<Integer>(); // 最良気配値が上に変化してから次に下降するまでの時間
+			ArrayList<Integer> askdownupspan   = new ArrayList<Integer>(); // 最良気配値が下に変化してから次に上昇するまでの時間
+			ArrayList<Integer> askdowndownspan = new ArrayList<Integer>(); // 最良気配値が下に変化してから次に下降するまでの時間
 
 			String time = ""; // 時刻
+			int inttime = 0; // 数値化時刻
+			int bidtimestamp = 0;
+			int asktimestamp = 0;
 			String[] closing = new String[2];
 			if (Integer.parseInt(rfiledate) < 20110214) {
 				if (Integer.parseInt(rfiledate) < 20090130 && (i == 0 || i == filelist.length - 1)) {
@@ -159,10 +173,13 @@ public class serial_correlation {
 			}
 			boolean continuous = false; // ザラバを判定する．場中はtrue.
 			boolean morning = true; // 前場と後場で分かれているならtrue.ファイル分割のため．
+			boolean bidupflag = false; // 最良気配値が上に動いたらtrue.
+			boolean askupflag = false; // 最良気配値が上に動いたらtrue.
 
 			while ((line = brtxt.readLine()) != null) {
 
 				time = line.split(",", -1)[1].split(":")[0] + line.split(",", -1)[1].split(":")[1];
+				inttime = Integer.parseInt(time + line.split(",", -1)[1].split(":")[2]);
 
 				if (line.split(",", -1)[9].equals("  1")) {
 					continuous = true;
@@ -212,15 +229,51 @@ public class serial_correlation {
 
 					if (bidprice != bidtemp && bidprice != 0) {
 						if (bidtemp != 0) {
-							bidseries.add(bidprice - bidtemp);
+							// ループ初回を飛ばす．
+							if (bidprice > bidtemp) {
+								if (bidupflag) {
+									// 前回上昇していたら
+									bidupupspan.add(bidtimestamp - inttime);
+								} else {
+									// 前回下降していたら
+									biddownupspan.add(bidtimestamp - inttime);
+								}
+								bidupflag = true;
+							} else {
+								if (bidupflag) {
+									// 前回上昇していたら
+									bidupdownspan.add(bidtimestamp - inttime);
+								} else {
+									// 前回下降していたら
+									biddowndownspan.add(bidtimestamp - inttime);
+								}
+								bidupflag = false;
+							}
 						}
 						bidtemp = bidprice;
+						bidtimestamp = inttime;
 					}
 					if (askprice != asktemp && askprice != 0) {
 						if (asktemp != 0) {
-							askseries.add(askprice - asktemp);
+							// ループ初回を飛ばす．
+							if (askprice > asktemp) {
+								if (askupflag) {
+									askupupspan.add(asktimestamp - inttime);
+								} else {
+									askdownupspan.add(asktimestamp - inttime);
+								}
+								askupflag = true;
+							} else {
+								if (askupflag) {
+									askupdownspan.add(asktimestamp - inttime);
+								} else {
+									askdowndownspan.add(asktimestamp - inttime);
+								}
+								askupflag = false;
+							}
 						}
 						asktemp = askprice;
+						asktimestamp = inttime;
 					}
 				}
 			}

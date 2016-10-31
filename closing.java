@@ -11,7 +11,7 @@ public class closing {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2013";
+		String datayear = "\\2007";
 		String datadir = "\\rawcsv_2\\daily";
 		String rfilename;
 		String rfiledate; // 読み込むファイルの日付を格納する．

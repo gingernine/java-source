@@ -57,7 +57,7 @@ public class arrival_frequency {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2007";
+		String datayear = "\\2006";
 		String datadir = "\\price_or_depth_change\\daily";
 		String writedir = "\\statistics_of_the_limit_order_book"; // 書き込みファイル
 		File newdir = new File(currentdir + writedir);
@@ -171,7 +171,7 @@ public class arrival_frequency {
 				}
 
 				if (continuous && !isInit) {
-					// ザラバ時間のみデータ抽出．
+					// ザラバのみデータ抽出．
 					if (line.split(",", -1)[2].equals("Quote")) {
 
 						if (Integer.parseInt(line.split(",", -1)[6]) > biddepth) {
@@ -199,10 +199,22 @@ public class arrival_frequency {
 						if (Integer.parseInt(line.split(",", -1)[5]) < bidprice) {
 							// 最良買い気配値が下に変化した場合．
 							count(down_times_bid);
+							if (market_sell_order) {
+								// 直前に売りの成行注文が入ったら，
+								// 更新後の最良売り気配値と約定価格が等しい場合 → 板が下に移動
+								pieces_market_sell.add(tradevolume + Integer.parseInt(line.split(",", -1)[8]));
+								market_sell_order = false;
+							}
 						}
 						if (Integer.parseInt(line.split(",", -1)[7]) > askprice) {
 							// 最良売り気配値が上に変化した場合．
 							count(up_times_ask);
+							if (market_buy_order) {
+								// 直前に買いの成行注文が入ったら，
+								// 更新後の最良買い気配値と約定価格が等しい場合 → 板が上に移動
+								pieces_market_buy.add(tradevolume + Integer.parseInt(line.split(",", -1)[6]));
+								market_buy_order = false;
+							}
 						}
 						if (Integer.parseInt(line.split(",", -1)[7]) < askprice) {
 							// 最良売り気配値が下に変化した場合．
@@ -240,11 +252,19 @@ public class arrival_frequency {
 						if (tradeprice >= askprice) {
 							// 約定価格が直前のbest ask に等しい又は高いなら，買いの成行注文として数える．
 							count(freq_market_buy);
-							market_buy_order = true;
+							if (tradeprice > askprice) {
+								pieces_market_buy.add(tradevolume);
+							} else {
+								market_buy_order = true;
+							}
 						} else if (tradeprice <= bidprice) {
 							// 約定価格が直前のbest bid に等しい又は低いなら，売りの成行注文として数える．
 							count(freq_market_sell);
-							market_sell_order = true;
+							if (tradeprice < bidprice) {
+								pieces_market_sell.add(tradevolume);
+							} else {
+								market_sell_order = true;
+							}
 						}
 					}
 				}
