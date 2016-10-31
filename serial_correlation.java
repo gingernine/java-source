@@ -19,13 +19,13 @@ public class serial_correlation {
 
 		// 計算に必要な変数の定義
 		int n = series.size(); // 系列のデータ数．
-		double series1[] = new double[n]; // num に入っている系列を double 型に変換する．
-		double series2[] = new double[n]; // time1 の系列から期を一つずらしたものを格納する．
-		double mean1 = 0.0; // time1 の系列の平均値
-		double mean2 = 0.0; // time2 の系列の平均値
-		double var1 = 0.0; // time1 の系列の不偏分散
-		double var2 = 0.0; // time2 の系列の不偏分散
-		double cov = 0.0; // time1 と time2 の系列の不偏共分散
+		double series1[] = new double[n]; // series に入っている系列を double 型に変換する．
+		double series2[] = new double[n]; // series1 の系列から期を一つずらしたものを格納する．
+		double mean1 = 0.0; // series1 の系列の平均値
+		double mean2 = 0.0; // series2 の系列の平均値
+		double var1 = 0.0; // series1 の系列の不偏分散
+		double var2 = 0.0; // series2 の系列の不偏分散
+		double cov = 0.0; // series1 と series2 の系列の不偏共分散
 
 		// time2 は time1 よりも1期だけ進んでいる．
 		int q = 0;
@@ -161,7 +161,7 @@ public class serial_correlation {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2006";
+		String datayear = "\\2007";
 		String datadir = "\\rawcsv_2\\daily";
 		String writedir = "\\correlation";
 		// String datadir = "\\price_or_depth_change\\daily";
@@ -183,7 +183,11 @@ public class serial_correlation {
 		if (!file2.exists()) {
 			file2.mkdirs();
 		}
-		File file3 = new File(currentdir + datayear + writedir + "\\correlation.csv");
+		File file3 = new File(currentdir + datayear + writedir + "\\correlation\\");
+		if (!file3.exists()) {
+			file3.mkdirs();
+		}
+		file3 = new File(currentdir + datayear + writedir + "\\correlation\\correlation.csv");
 		PrintWriter pw3 = new PrintWriter(new BufferedWriter(new FileWriter(file3)));
 		pw3.println("date,bid,ask,");
 		file1 = new File(currentdir + datayear + writedir + "\\time_span\\daily\\");
@@ -198,7 +202,7 @@ public class serial_correlation {
 		int[] timespan = { 1, 2, 5, 15, 30, 60, 120, 300 }; //時間間隔(秒)
 		PrintWriter[] printwriters = new PrintWriter[timespan.length];
 		for (int t = 0; t < timespan.length; t++) {
-			File f = new File(currentdir + datayear + writedir + "\\correlation_" + timespan[t] + "_.csv");
+			File f = new File(currentdir + datayear + writedir + "\\correlation\\correlation_" + timespan[t] + "_.csv");
 			printwriters[t] = new PrintWriter(new BufferedWriter(new FileWriter(f)));
 			printwriters[t].println("date,bid,ask,");
 		}
