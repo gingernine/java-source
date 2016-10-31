@@ -104,9 +104,13 @@ public class arrival_frequency {
 			ArrayList<Integer> up_times_ask       = new ArrayList<Integer>(); // upmovement times of the best ask
 			ArrayList<Integer> down_times_ask     = new ArrayList<Integer>(); // downmovement times of the best ask
 			int bidprice = 0; // 最良買い気配値
+			int bidpricetemp = 0; // 最良買い気配値の一時保存
 			int askprice = 0; // 最良売り気配値
+			int askpricetemp = 0; // 最良売り気配値の一時保存
 			int biddepth = 0; // 最良買い気配にかかる数量
+			int biddepthtemp = 0; // 最良買い気配数量の一時保存
 			int askdepth = 0; // 最良売り気配にかかる数量
+			int askdepthtemp = 0; // 最良売り気配数量の一時保存
 			int tradeprice = 0; // 約定価格
 			int tradevolume = 0; // 約定数量
 			String time = ""; // 時刻
@@ -140,7 +144,7 @@ public class arrival_frequency {
 							"," + getlast(up_times_bid) + "," + getlast(down_times_bid) +
 							"," + getlast(up_times_ask) + "," + getlast(down_times_ask));
 
-					// initialize
+					// initialize (morning, afternoon session に分かれている日のため)
 					freq_market_buy    = new ArrayList<Integer>();
 					freq_market_sell   = new ArrayList<Integer>();
 					freq_limit_buy     = new ArrayList<Integer>();
@@ -162,10 +166,10 @@ public class arrival_frequency {
 				if (continuous && isInit) {
 					// 最良気配に初期値を入れる．
 					if (line.split(",", -1)[2].equals("Quote")) {
-						bidprice = Integer.parseInt(line.split(",", -1)[5]);
-						biddepth = Integer.parseInt(line.split(",", -1)[6]);
-						askprice = Integer.parseInt(line.split(",", -1)[7]);
-						askdepth = Integer.parseInt(line.split(",", -1)[8]);
+						bidpricetemp = Integer.parseInt(line.split(",", -1)[5]);
+						biddepthtemp = Integer.parseInt(line.split(",", -1)[6]);
+						askpricetemp = Integer.parseInt(line.split(",", -1)[7]);
+						askdepthtemp = Integer.parseInt(line.split(",", -1)[8]);
 						isInit = false; // 買い気配に初期値を入れたら初期化完了．
 					}
 				}
@@ -174,63 +178,69 @@ public class arrival_frequency {
 					// ザラバのみデータ抽出．
 					if (line.split(",", -1)[2].equals("Quote")) {
 
-						if (Integer.parseInt(line.split(",", -1)[6]) > biddepth) {
+						// 現在の最良気配値・数量を取得する．
+						bidprice = Integer.parseInt(line.split(",", -1)[5]);
+						biddepth = Integer.parseInt(line.split(",", -1)[6]);
+						askprice = Integer.parseInt(line.split(",", -1)[7]);
+						askdepth = Integer.parseInt(line.split(",", -1)[8]);
+
+						if (biddepth > biddepthtemp) {
 							// 買い気配数量が増加したら買いの指値注文として数える．
 							// 増加分は指値注文数として記録する．
 							count(freq_limit_buy);
-							pieces_limit_buy.add(Integer.parseInt(line.split(",", -1)[6]) - biddepth);
+							pieces_limit_buy.add(biddepth - biddepthtemp);
 						}
-						if (Integer.parseInt(line.split(",", -1)[8]) > askdepth) {
+						if (askdepth > askdepthtemp) {
 							// 売り気配数量が増加したら売りの指値注文として数える．
 							// 増加分は指値注文数として記録する．
 							count(freq_limit_sell);
-							pieces_limit_sell.add(Integer.parseInt(line.split(",", -1)[8]) - askdepth);
+							pieces_limit_sell.add(askdepth - askdepthtemp);
 						}
-						if (Integer.parseInt(line.split(",", -1)[5]) > bidprice) {
+						if (bidprice > bidpricetemp) {
 							// 最良買い気配値が上に変化した場合．
 							count(up_times_bid);
 							if (market_buy_order) {
 								// 直前に買いの成行注文が入ったら，
 								// 更新後の最良買い気配値と約定価格が等しい場合 → 板が上に移動
-								pieces_market_buy.add(tradevolume + Integer.parseInt(line.split(",", -1)[6]));
+								pieces_market_buy.add(tradevolume + biddepth);
 								market_buy_order = false;
 							}
 						}
-						if (Integer.parseInt(line.split(",", -1)[5]) < bidprice) {
+						if (bidprice < bidpricetemp) {
 							// 最良買い気配値が下に変化した場合．
 							count(down_times_bid);
 							if (market_sell_order) {
 								// 直前に売りの成行注文が入ったら，
 								// 更新後の最良売り気配値と約定価格が等しい場合 → 板が下に移動
-								pieces_market_sell.add(tradevolume + Integer.parseInt(line.split(",", -1)[8]));
+								pieces_market_sell.add(tradevolume + askdepth);
 								market_sell_order = false;
 							}
 						}
-						if (Integer.parseInt(line.split(",", -1)[7]) > askprice) {
+						if (askprice > askpricetemp) {
 							// 最良売り気配値が上に変化した場合．
 							count(up_times_ask);
 							if (market_buy_order) {
 								// 直前に買いの成行注文が入ったら，
 								// 更新後の最良買い気配値と約定価格が等しい場合 → 板が上に移動
-								pieces_market_buy.add(tradevolume + Integer.parseInt(line.split(",", -1)[6]));
+								pieces_market_buy.add(tradevolume + biddepth);
 								market_buy_order = false;
 							}
 						}
-						if (Integer.parseInt(line.split(",", -1)[7]) < askprice) {
+						if (askprice < askpricetemp) {
 							// 最良売り気配値が下に変化した場合．
 							count(down_times_ask);
 							if (market_sell_order) {
 								// 直前に売りの成行注文が入ったら，
 								// 更新後の最良売り気配値と約定価格が等しい場合 → 板が下に移動
-								pieces_market_sell.add(tradevolume + Integer.parseInt(line.split(",", -1)[8]));
+								pieces_market_sell.add(tradevolume + askdepth);
 								market_sell_order = false;
 							}
 						}
 
-						bidprice = Integer.parseInt(line.split(",", -1)[5]); // 最良買い気配値を更新
-						biddepth = Integer.parseInt(line.split(",", -1)[6]); // 最良買い気配数量を更新
-						askprice = Integer.parseInt(line.split(",", -1)[7]); // 最良売り気配値を更新
-						askdepth = Integer.parseInt(line.split(",", -1)[8]); // 最良売り気配数量を更新
+						bidpricetemp = Integer.parseInt(line.split(",", -1)[5]); // 最良買い気配値を更新
+						biddepthtemp = Integer.parseInt(line.split(",", -1)[6]); // 最良買い気配数量を更新
+						askpricetemp = Integer.parseInt(line.split(",", -1)[7]); // 最良売り気配値を更新
+						askdepthtemp = Integer.parseInt(line.split(",", -1)[8]); // 最良売り気配数量を更新
 
 						if (market_buy_order) {
 							pieces_market_buy.add(tradevolume);

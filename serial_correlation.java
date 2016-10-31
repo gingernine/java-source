@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 // 売り/買い気配の価格の変動について系列相関を計算する．
 public class serial_correlation {
@@ -54,6 +56,31 @@ public class serial_correlation {
 		return cov / Math.sqrt(var1 * var2);
 	}
 
+	private static void mapsort(Map<Integer, Integer> series) {
+		//
+	}
+	private static void timespan_parse(Map<Integer, Integer> bidtime, Map<Integer, Integer> asktime) {
+		// 板の変化を変化時間感覚毎に分類する．
+		// 前に 上がった / 下がったとき，何秒後に 上がる / 下がる かを把握する．
+
+		// 最後に変動量の時系列グラフを書くためのファイルを作成する．
+		// 時間は9時ちょうどから15時10分までで統一．
+		int starttime = 900;
+		int minute = 60;
+		for (int k = 0; k < 7; k++) {
+			starttime = starttime + k * 100;
+			if (k == 6) minute = 10; // 15時台は10分までに制限
+			for (int j = 0; j < minute; j++) {
+				if (!bidtime.containsKey(starttime + j)) {
+					bidtime.put(starttime + j, null);
+				}
+				if (!asktime.containsKey(starttime + j)) {
+					asktime.put(starttime + j, null);
+				}
+			}
+		}
+	}
+
 	private static void writefile(File file1, File file2, ArrayList<Integer> bidseries, ArrayList<Integer> askseries) {
 
 		try {
@@ -92,8 +119,7 @@ public class serial_correlation {
 			}
 			pw1.close();
 			pw2.close();
-		} catch (IOException e) {
-			;
+		} catch (IOException ignored) {
 		}
 	}
 
@@ -115,13 +141,11 @@ public class serial_correlation {
 
 		// 書き出すファイルをしまうフォルダを用意する．
 		File file1 = new File(currentdir + datayear + writedir + "\\daily\\");
-		if (!file1.exists()) {
+		if (!file1.exists())
 			file1.mkdirs();
-		}
 		File file2 = new File(currentdir + datayear + writedir + "\\scattered\\");
-		if (!file2.exists()) {
+		if (!file2.exists())
 			file2.mkdirs();
-		}
 		File file3 = new File(currentdir + datayear + writedir + "\\correlation.csv");
 		PrintWriter pw3 = new PrintWriter(new BufferedWriter(new FileWriter(file3)));
 		pw3.println("date,bid,ask,");
@@ -144,6 +168,10 @@ public class serial_correlation {
 			int asktemp = 0; // 売り気配値を一時保存
 			ArrayList<Integer> bidseries = new ArrayList<Integer>(); // 最良買い気配値
 			ArrayList<Integer> askseries = new ArrayList<Integer>(); // 最良売り気配値
+			Map<Integer, Integer> bidtime = new HashMap<Integer, Integer>(); // 最良気配値の<変化時刻,
+																				// 変化量>
+			Map<Integer, Integer> asktime = new HashMap<Integer, Integer>(); // 最良気配値の<変化時刻,
+																				// 変化量>
 
 			String time = ""; // 時刻
 			String[] closing = new String[2];
@@ -213,12 +241,14 @@ public class serial_correlation {
 					if (bidprice != bidtemp && bidprice != 0) {
 						if (bidtemp != 0) {
 							bidseries.add(bidprice - bidtemp);
+							bidtime.put(Integer.parseInt(time), bidprice - bidtemp);
 						}
 						bidtemp = bidprice;
 					}
 					if (askprice != asktemp && askprice != 0) {
 						if (asktemp != 0) {
 							askseries.add(askprice - asktemp);
+							asktime.put(Integer.parseInt(time), askprice - asktemp);
 						}
 						asktemp = askprice;
 					}

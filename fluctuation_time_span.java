@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 // 売り/買い気配の価格の変動について系列相関を計算する．
 public class fluctuation_time_span {
@@ -100,7 +102,7 @@ public class fluctuation_time_span {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2009";
+		String datayear = "\\2006";
 		String datadir = "\\rawcsv_2\\daily";
 		String writedir = "\\correlation";
 		// String datadir = "\\price_or_depth_change\\daily";
@@ -155,6 +157,8 @@ public class fluctuation_time_span {
 			ArrayList<Integer> askupdownspan   = new ArrayList<Integer>(); // 最良気配値が上に変化してから次に下降するまでの時間
 			ArrayList<Integer> askdownupspan   = new ArrayList<Integer>(); // 最良気配値が下に変化してから次に上昇するまでの時間
 			ArrayList<Integer> askdowndownspan = new ArrayList<Integer>(); // 最良気配値が下に変化してから次に下降するまでの時間
+			Map<Integer, String> bidseries = new HashMap<Integer, String>(); // 最良気配値の <変化時刻，変動量>
+			Map<Integer, String> askseries = new HashMap<Integer, String>(); // 最良気配値の <変化時刻，変動量>
 
 			String time = ""; // 時刻
 			int inttime = 0; // 数値化時刻
