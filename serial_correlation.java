@@ -16,7 +16,6 @@ import java.util.Map;
 public class serial_correlation {
 
 	private static double correlation(List<Integer> series, boolean span) {
-		// num で価格の系列を取得する．取得した系列について，期を一つずらした系列を作り，numの系列との相関(系列相関)を計算する．
 
 		// 計算に必要な変数の定義
 		int n = series.size(); // 系列のデータ数．
