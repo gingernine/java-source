@@ -57,7 +57,9 @@ public class serial_correlation {
 	}
 
 	private static void mapsort(Map<Integer, Integer> series) {
-		//
+		// mapのキーには時間を渡しているので，時系列の順番になるようにファイルに書き出す．
+		
+		series
 	}
 	private static void timespan_parse(Map<Integer, Integer> bidtime, Map<Integer, Integer> asktime) {
 		// 板の変化を変化時間感覚毎に分類する．

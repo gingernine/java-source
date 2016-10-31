@@ -237,10 +237,10 @@ public class arrival_frequency {
 							}
 						}
 
-						bidpricetemp = Integer.parseInt(line.split(",", -1)[5]); // 最良買い気配値を更新
-						biddepthtemp = Integer.parseInt(line.split(",", -1)[6]); // 最良買い気配数量を更新
-						askpricetemp = Integer.parseInt(line.split(",", -1)[7]); // 最良売り気配値を更新
-						askdepthtemp = Integer.parseInt(line.split(",", -1)[8]); // 最良売り気配数量を更新
+						bidpricetemp = bidprice; // 最良買い気配値を更新
+						biddepthtemp = biddepth; // 最良買い気配数量を更新
+						askpricetemp = askprice; // 最良売り気配値を更新
+						askdepthtemp = askdepth; // 最良売り気配数量を更新
 
 						if (market_buy_order) {
 							pieces_market_buy.add(tradevolume);
