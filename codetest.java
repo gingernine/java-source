@@ -46,10 +46,15 @@ public class codetest {
 			System.out.println(map);
 		}
 	}
+	private static void listsize(List<Integer> list) {
+		System.out.print(list.size());
+	}
 
 	public static void main(String[] args) {
 		// System.out.println(timeDiffInSeconds(113001,113005));
 		// sorttest();
 		arraytest();
+		List<Integer> list = new ArrayList<>();
+		listsize(new ArrayList<>());
 	}
 }

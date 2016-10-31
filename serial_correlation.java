@@ -15,7 +15,7 @@ import java.util.Map;
 // 売り/買い気配の価格の変動について系列相関を計算する．
 public class serial_correlation {
 
-	private static double correlation(ArrayList<Integer> series) {
+	private static double correlation(List<Integer> series) {
 		// num で価格の系列を取得する．取得した系列について，期を一つずらした系列を作り，numの系列との相関(系列相関)を計算する．
 
 		// 計算に必要な変数の定義
@@ -70,10 +70,9 @@ public class serial_correlation {
 		return diff;
 	}
 
-	private static Map<Integer, List<Integer>> time_span_parse(Map<Integer, int[]> timeseries) {
+	private static Map<Integer, List<Integer>> time_span_parse(Map<Integer, int[]> timeseries, int[] timespan) {
 		// 板の変化を変化時間感覚毎に分類する． 前に 上がった / 下がったとき，何秒後に 上がる / 下がる かを把握する．
 
-		int[] timespan = { 1, 2, 5, 15, 30, 60, 120, 300 }; //時間間隔(秒)
 		Map<Integer, List<Integer>> span_amount = new HashMap<Integer, List<Integer>>();
 		List<Integer> serialnum = new ArrayList<Integer>(timeseries.keySet());
 		Collections.sort(serialnum); // 時間に沿ってキーをソートする．
@@ -85,11 +84,11 @@ public class serial_correlation {
 			timediff = time_diff_in_seconds(timetemp, readtime);
 			for (int ts : timespan) {
 				if (timediff <= ts) {
-					if (span_amount.containsKey(ts)) {
+					if (!span_amount.containsKey(ts)) {
 						span_amount.put(ts, new ArrayList<Integer>());
 					}
-					span_amount.get(ts).add(timeseries.get(sn - 1)[0]); // snは0から始まるが初回のループで上のif文を通過することはないだろう．
-					span_amount.get(ts).add(timeseries.get(sn)[0]);
+					span_amount.get(ts).add(timeseries.get(sn - 1)[1]); // snは0から始まるが初回のループで上のif文を通過することはないだろう．
+					span_amount.get(ts).add(timeseries.get(sn)[1]);
 					break;
 				}
 			}
@@ -98,8 +97,8 @@ public class serial_correlation {
 		return span_amount;
 	}
 
-	private static void filewriter(File file1, File file2, ArrayList<Integer> bidseries,
-			ArrayList<Integer> askseries) {
+	private static void filewriter(File file1, File file2, List<Integer> bidseries,
+			List<Integer> askseries, boolean span) {
 		// 価格変化量の系列と，「次の価格変化量」の系列をファイルに書き出す．ついでに，散布図で見るために乱数項をつけた系列のファイルも作成する．
 
 		try {
@@ -116,8 +115,16 @@ public class serial_correlation {
 				maxrow = bidseries.size() - 1;
 				minrow = askseries.size() - 1;
 			}
-			for (int r = 0; r < maxrow; r++) {
-				if (r < minrow) {
+			int r = 0;
+			int add = 1;
+			int ext = 0;
+			if (span) {
+				// 時間間隔別のデータは2行1ペアで書き出す．これは time_span_parse 関数の描き方に因る．
+				add = 2;
+				ext = 1;
+			}
+			while (r < maxrow - ext) {
+				if (r < minrow - ext) {
 					pw1.println(bidseries.get(r) + "," + bidseries.get(r + 1) + "," + askseries.get(r) + ","
 							+ askseries.get(r + 1) + ",");
 					pw2.println((((Integer) bidseries.get(r)).intValue() + 5 * (2 * Math.random() - 1)) + ","
@@ -135,6 +142,7 @@ public class serial_correlation {
 								+ (((Integer) bidseries.get(r + 1)).intValue() + 5 * (2 * Math.random() - 1)) + ",,,");
 					}
 				}
+				r = r + add;
 			}
 			pw1.close();
 			pw2.close();
@@ -170,9 +178,13 @@ public class serial_correlation {
 		File file3 = new File(currentdir + datayear + writedir + "\\correlation.csv");
 		PrintWriter pw3 = new PrintWriter(new BufferedWriter(new FileWriter(file3)));
 		pw3.println("date,bid,ask,");
-		File file4 = new File(currentdir + datayear + writedir + "\\time_span\\");
-		if (!file4.exists()) {
-			file4.mkdirs();
+		file1 = new File(currentdir + datayear + writedir + "\\time_span\\daily\\");
+		if (!file1.exists()) {
+			file1.mkdirs();
+		}
+		file2 = new File(currentdir + datayear + writedir + "\\time_span\\scattered\\");
+		if (!file2.exists()) {
+			file2.mkdirs();
 		}
 
 		for (int i = 0; i < filelist.length; i++) {
@@ -191,10 +203,13 @@ public class serial_correlation {
 			int askprice = 0;
 			int bidtemp = 0; // 買い気配値を一時保存
 			int asktemp = 0; // 売り気配値を一時保存
-			ArrayList<Integer> bidseries = new ArrayList<Integer>(); // 最良買い気配値
-			ArrayList<Integer> askseries = new ArrayList<Integer>(); // 最良売り気配値
+			List<Integer> bidseries = new ArrayList<Integer>(); // 最良買い気配値
+			List<Integer> askseries = new ArrayList<Integer>(); // 最良売り気配値
 			Map<Integer, int[]> bid_timestamp = new HashMap<Integer, int[]>(); // <連番, {変化時刻, 変化量}>
 			Map<Integer, int[]> ask_timestamp = new HashMap<Integer, int[]>(); // <連番, {変化時刻, 変化量}>
+			Map<Integer, List<Integer>> bid_span_amount = new HashMap<Integer, List<Integer>>(); // <変化間隔, 対応するデータのリスト>
+			Map<Integer, List<Integer>> ask_span_amount = new HashMap<Integer, List<Integer>>(); // <変化間隔, 対応するデータのリスト>
+			int[] timespan = { 1, 2, 5, 15, 30, 60, 120, 300 }; //時間間隔(秒)
 			int bidserial = 0; // 連想配列のキーとなる連番．
 			int askserial = 0; // 連想配列のキーとなる連番．
 
@@ -249,10 +264,32 @@ public class serial_correlation {
 					file1 = new File(currentdir + datayear + writedir + "\\daily\\" + rfiledate + ampm +"_.csv");
 					file2 = new File(currentdir + datayear + writedir + "\\scattered\\" + rfiledate
 									+ ampm + "_scattered_.csv");
-					filewriter(file1, file2, bidseries, askseries);
+					filewriter(file1, file2, bidseries, askseries, false);
 
+					bid_span_amount = time_span_parse(bid_timestamp, timespan);
+					ask_span_amount = time_span_parse(ask_timestamp, timespan);
+
+					for (int ts : timespan) {
+						file1 = new File(currentdir + datayear + writedir + "\\time_span\\daily\\" + rfiledate
+								+ ampm + "_" + ts +"_.csv");
+						file2 = new File(currentdir + datayear + writedir + "\\time_span\\scattered\\" + rfiledate
+								+ "_" + ts + "_scattered_.csv");
+						if (bid_span_amount.containsKey(ts) && ask_span_amount.containsKey(ts)) {
+							filewriter(file1, file2, bid_span_amount.get(ts), ask_span_amount.get(ts), true);
+						} else {
+							if (bid_span_amount.containsKey(ts) && !ask_span_amount.containsKey(ts)) {
+								filewriter(file1, file2, bid_span_amount.get(ts), new ArrayList<Integer>(), true);
+							} else if (!bid_span_amount.containsKey(ts) && ask_span_amount.containsKey(ts)) {
+								filewriter(file1, file2, new ArrayList<Integer>(), ask_span_amount.get(ts), true);
+							} else {
+								filewriter(file1, file2, new ArrayList<Integer>(), new ArrayList<Integer>(), true);
+							}
+						}
+					}
 					bidseries = new ArrayList<Integer>(); // initialize
 					askseries = new ArrayList<Integer>(); // initialize
+					bid_timestamp = new HashMap<Integer, int[]>(); // initialize
+					ask_timestamp = new HashMap<Integer, int[]>(); // initialize
 					bidtemp = 0; // initialize
 					asktemp = 0; // initialize
 					bidserial = 0; // initialize
