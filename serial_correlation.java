@@ -175,29 +175,19 @@ public class serial_correlation {
 		File[] filelist = rfilepath.listFiles(); // 読み込むファイル名を取得する．
 
 		// 書き出すファイルと，しまうフォルダを用意する．
-		File file1 = new File(currentdir + datayear + writedir + "\\daily\\");
-		if (!file1.exists()) {
-			file1.mkdirs();
+		String[] subdirs = { "\\daily\\", "\\scattered\\", "\\correlation\\",
+				"\\time_span\\daily\\", "\\time_span\\scattered\\" };
+		for (String sd : subdirs) {
+			File f = new File(currentdir + datayear + writedir + sd);
+			if (!f.exists()) {
+				f.mkdirs();
+			}
 		}
-		File file2 = new File(currentdir + datayear + writedir + "\\scattered\\");
-		if (!file2.exists()) {
-			file2.mkdirs();
-		}
-		File file3 = new File(currentdir + datayear + writedir + "\\correlation\\");
-		if (!file3.exists()) {
-			file3.mkdirs();
-		}
-		file3 = new File(currentdir + datayear + writedir + "\\correlation\\correlation.csv");
+		File file1 = new File(currentdir + datayear + writedir + "\\correlation\\correlation.csv"); // initialize
+		File file2 = new File(currentdir + datayear + writedir + "\\correlation\\correlation.csv"); // initialize
+		File file3 = new File(currentdir + datayear + writedir + "\\correlation\\correlation.csv");
 		PrintWriter pw3 = new PrintWriter(new BufferedWriter(new FileWriter(file3)));
 		pw3.println("date,bid,ask,");
-		file1 = new File(currentdir + datayear + writedir + "\\time_span\\daily\\");
-		if (!file1.exists()) {
-			file1.mkdirs();
-		}
-		file2 = new File(currentdir + datayear + writedir + "\\time_span\\scattered\\");
-		if (!file2.exists()) {
-			file2.mkdirs();
-		}
 
 		int[] timespan = { 1, 2, 5, 15, 30, 60, 120, 300 }; //時間間隔(秒)
 		PrintWriter[] printwriters = new PrintWriter[timespan.length];
