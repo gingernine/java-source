@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // 売り/買い気配の価格の変動について系列相関を計算する．
@@ -56,34 +58,47 @@ public class serial_correlation {
 		return cov / Math.sqrt(var1 * var2);
 	}
 
-	private static void mapsort(Map<Integer, Integer> series) {
-		// mapのキーには時間を渡しているので，時系列の順番になるようにファイルに書き出す．
-		
-		series
+	private static int time_diff_in_seconds(int timeBefore, int timeAfter) {
+		// 秒単位時刻(初めの2桁がhour, 次の2桁がminute, 最後の2桁がsecond となる数値データ)の差を 秒 で返す．
+		int secondB = timeBefore % 100;
+		int secondA = timeAfter % 100;
+		int minuteB = (timeBefore % 10000 - secondB) / 100;
+		int minuteA = (timeAfter % 10000 - secondA) / 100;
+		int hourB = (timeBefore - minuteB * 100 - secondB) / 10000;
+		int hourA = (timeAfter - minuteA * 100 - secondA) / 10000;
+		int diff = (hourA - hourB) * 3600 + (minuteA - minuteB) * 60 + (secondA - secondB);
+		return diff;
 	}
-	private static void timespan_parse(Map<Integer, Integer> bidtime, Map<Integer, Integer> asktime) {
-		// 板の変化を変化時間感覚毎に分類する．
-		// 前に 上がった / 下がったとき，何秒後に 上がる / 下がる かを把握する．
 
-		// 最後に変動量の時系列グラフを書くためのファイルを作成する．
-		// 時間は9時ちょうどから15時10分までで統一．
-		int starttime = 900;
-		int minute = 60;
-		for (int k = 0; k < 7; k++) {
-			starttime = starttime + k * 100;
-			if (k == 6) minute = 10; // 15時台は10分までに制限
-			for (int j = 0; j < minute; j++) {
-				if (!bidtime.containsKey(starttime + j)) {
-					bidtime.put(starttime + j, null);
-				}
-				if (!asktime.containsKey(starttime + j)) {
-					asktime.put(starttime + j, null);
+	private static Map<Integer, List<Integer>> time_span_parse(Map<Integer, Integer> timeseries) {
+		// 板の変化を変化時間感覚毎に分類する． 前に 上がった / 下がったとき，何秒後に 上がる / 下がる かを把握する．
+
+		int[] timespan = { 1, 2, 5, 15, 30, 60, 120, 300 }; //時間間隔(秒)
+		Map<Integer, List<Integer>> span_amount = new HashMap<Integer, List<Integer>>();
+		List<Integer> timelist = new ArrayList<Integer>(timeseries.keySet());
+		Collections.sort(timelist); // 時間に沿ってキーをソートする．
+		int timetemp = 0; // 一つ前の変化時刻を保存．
+		int timediff = 0; // 変化時間間隔を取得．
+		for (int t : timelist) {
+			timediff = time_diff_in_seconds(timetemp, t);
+			for (int ts : timespan) {
+				if (timediff <= ts) {
+					if (span_amount.containsKey(ts)) {
+						span_amount.put(ts, new ArrayList<Integer>());
+					}
+					span_amount.get(ts).add(timeseries.get(timetemp));
+					span_amount.get(ts).add(timeseries.get(t));
+					break;
 				}
 			}
+			timetemp = t;
 		}
+		return span_amount;
 	}
 
-	private static void writefile(File file1, File file2, ArrayList<Integer> bidseries, ArrayList<Integer> askseries) {
+	private static void filewriter1(File file1, File file2, ArrayList<Integer> bidseries,
+			ArrayList<Integer> askseries) {
+		// 価格変化量の系列と，「次の価格変化量」の系列をファイルに書き出す．ついでに，散布図で見るために乱数項をつけた系列のファイルも作成する．
 
 		try {
 			PrintWriter pw1 = new PrintWriter(new BufferedWriter(new FileWriter(file1)));
@@ -125,6 +140,45 @@ public class serial_correlation {
 		}
 	}
 
+	private static void filewriter2(File file, Map<Integer, Integer> bidseries, Map<Integer, Integer> askseries) {
+		// 最後に変動量の時系列グラフを書くためのファイルを作成する．
+		// 時間は9時ちょうどから15時10分までで統一．
+
+		try {
+			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
+			pw.println("time,bid_change_amount,ask_change_amount");
+			int hour = 90000;
+			int minute = 60;
+			String stringtime = ""; // 時間を":"で連結したもの．
+			String bid_change_amount = "";
+			String ask_change_amount = "";
+			for (int h = 0; h < 7; h++) {
+				hour = hour + h * 10000;
+				if (h == 6) {
+					minute = 10; // 15時台は10分までに制限
+				}
+				for (int m = 0; m < minute; m++) {
+					for (int s = 0; m < 60; m++) {
+						bid_change_amount = "";
+						ask_change_amount = "";
+						stringtime = String.valueOf(hour + m * 100 + s).substring(0, 2) + ":"
+								+ String.valueOf(hour + m * 100 + s).substring(3, 4) + ":"
+								+ String.valueOf(hour + m * 100 + s).substring(4, 6);
+						if (bidseries.containsKey((hour + m * 100 + s))) {
+							bid_change_amount = String.valueOf(bidseries.get((hour + m * 100 + s)));
+						}
+						if (askseries.containsKey((hour + m * 100 + s))) {
+							ask_change_amount = String.valueOf(askseries.get((hour + m * 100 + s)));
+						}
+						pw.println(stringtime + "," + bid_change_amount + "," + ask_change_amount + ",");
+					}
+				}
+			}
+			pw.close();
+		} catch (IOException ignored) {
+		}
+	}
+
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
@@ -141,16 +195,22 @@ public class serial_correlation {
 		File rfilepath = new File(currentdir + datayear + datadir); // 読み込むファイルのディレクトリのパス．
 		File[] filelist = rfilepath.listFiles(); // 読み込むファイル名を取得する．
 
-		// 書き出すファイルをしまうフォルダを用意する．
+		// 書き出すファイルと，しまうフォルダを用意する．
 		File file1 = new File(currentdir + datayear + writedir + "\\daily\\");
-		if (!file1.exists())
+		if (!file1.exists()) {
 			file1.mkdirs();
+		}
 		File file2 = new File(currentdir + datayear + writedir + "\\scattered\\");
-		if (!file2.exists())
+		if (!file2.exists()) {
 			file2.mkdirs();
+		}
 		File file3 = new File(currentdir + datayear + writedir + "\\correlation.csv");
 		PrintWriter pw3 = new PrintWriter(new BufferedWriter(new FileWriter(file3)));
 		pw3.println("date,bid,ask,");
+		File file4 = new File(currentdir + datayear + writedir + "\\time_span\\");
+		if (!file4.exists()) {
+			file4.mkdirs();
+		}
 
 		for (int i = 0; i < filelist.length; i++) {
 
@@ -170,12 +230,15 @@ public class serial_correlation {
 			int asktemp = 0; // 売り気配値を一時保存
 			ArrayList<Integer> bidseries = new ArrayList<Integer>(); // 最良買い気配値
 			ArrayList<Integer> askseries = new ArrayList<Integer>(); // 最良売り気配値
-			Map<Integer, Integer> bidtime = new HashMap<Integer, Integer>(); // 最良気配値の<変化時刻,
-																				// 変化量>
-			Map<Integer, Integer> asktime = new HashMap<Integer, Integer>(); // 最良気配値の<変化時刻,
-																				// 変化量>
+			Map<Integer, Integer> bidtime = new HashMap<Integer, Integer>(); // <変化時刻, 変化量>
+			Map<Integer, Integer> asktime = new HashMap<Integer, Integer>(); // <変化時刻, 変化量>
 
 			String time = ""; // 時刻
+			int seconds = 0; // 秒単位時刻
+			boolean hasSeconds = true;
+			if (Integer.parseInt(rfiledate) < 20060227) {
+				hasSeconds = false; // 2006年2月26日以前は秒のデータがない．
+			}
 			String[] closing = new String[2];
 			if (Integer.parseInt(rfiledate) < 20110214) {
 				if (Integer.parseInt(rfiledate) < 20090130 && (i == 0 || i == filelist.length - 1)) {
@@ -193,12 +256,18 @@ public class serial_correlation {
 			while ((line = brtxt.readLine()) != null) {
 
 				time = line.split(",", -1)[1].split(":")[0] + line.split(",", -1)[1].split(":")[1];
+				if (hasSeconds) {
+					seconds = Integer.parseInt(time + line.split(",", -1)[1].split(":")[2]);
+				} else {
+					seconds = Integer.parseInt(time + "00");
+				}
 
 				if (line.split(",", -1)[9].equals("  1")) {
 					continuous = true;
 				}
 
 				if (Arrays.asList(closing).contains(time) && line.split(",", -1)[2].equals("Trade")) {
+					// for loop でここに入る場合は，場が終わったときである．(系列相関の計算とファイルへの書き出しは前場後場で分けている．)
 
 					if ((Integer.parseInt(rfiledate) < 20090130 && (i == 0 || i == filelist.length - 1))
 							|| Integer.parseInt(rfiledate) >= 20110214) {
@@ -207,7 +276,7 @@ public class serial_correlation {
 						file1 = new File(currentdir + datayear + writedir + "\\daily\\" + rfiledate + "_.csv");
 						file2 = new File(
 								currentdir + datayear + writedir + "\\scattered\\" + rfiledate + "_scattered_.csv");
-						writefile(file1, file2, bidseries, askseries);
+						filewriter1(file1, file2, bidseries, askseries);
 					} else {
 						if (morning) {
 							pw3.println(rfiledate + "," + correlation(bidseries) + "," + correlation(askseries) + ",");
@@ -216,7 +285,7 @@ public class serial_correlation {
 									currentdir + datayear + writedir + "\\daily\\" + rfiledate + "_morning_.csv");
 							file2 = new File(currentdir + datayear + writedir + "\\scattered\\" + rfiledate
 									+ "_morning_scattered_.csv");
-							writefile(file1, file2, bidseries, askseries);
+							filewriter1(file1, file2, bidseries, askseries);
 							bidseries = new ArrayList<Integer>(); // initialize
 							askseries = new ArrayList<Integer>(); // initialize
 							bidtemp = 0;
@@ -229,7 +298,7 @@ public class serial_correlation {
 									currentdir + datayear + writedir + "\\daily\\" + rfiledate + "_afternoon_.csv");
 							file2 = new File(currentdir + datayear + writedir + "\\scattered\\" + rfiledate
 									+ "_afternoon_scattered_.csv");
-							writefile(file1, file2, bidseries, askseries);
+							filewriter1(file1, file2, bidseries, askseries);
 						}
 					}
 					continuous = false;
@@ -243,14 +312,14 @@ public class serial_correlation {
 					if (bidprice != bidtemp && bidprice != 0) {
 						if (bidtemp != 0) {
 							bidseries.add(bidprice - bidtemp);
-							bidtime.put(Integer.parseInt(time), bidprice - bidtemp);
+							bidtime.put(seconds, bidprice - bidtemp);
 						}
 						bidtemp = bidprice;
 					}
 					if (askprice != asktemp && askprice != 0) {
 						if (asktemp != 0) {
 							askseries.add(askprice - asktemp);
-							asktime.put(Integer.parseInt(time), askprice - asktemp);
+							asktime.put(seconds, askprice - asktemp);
 						}
 						asktemp = askprice;
 					}
