@@ -28,14 +28,14 @@ for (i in 1:len) {
     summary <- matrix(0, nrow = c-1, ncol = 7) #Œ‹‰Ê‘‚«o‚µ—p‚Ìs—ñ
     colnames(summary) <- c("Mean", "S.D.", "Median", "Kurtosis", "Skewness", "Minimum", "Maximum")
     rownames(summary) <- colnames(data)[2:c]
-    for (i in 2:c) {
-        Mean <- mean(data[,i])
-        SD <- sd(data[,i])
-        Median <- median(data[,i])
-        Kurtosis <- mean((data[,i] - Mean)^4)/(SD^4)
-        Skewness <- mean((data[,i] - Mean)^3)/(SD^3)
-        line <- paste(colnames(data[i]), Mean, SD, Median, Kurtosis, Skewness, min(data[,i]), max(data[,i]))
-        summary[i-1,] <- c(Mean, SD, Median, Kurtosis, Skewness, min(data[,i]), max(data[,i]))
+    for (j in 2:c) {
+        Mean <- mean(data[,j])
+        SD <- sd(data[,j])
+        Median <- median(data[,j])
+        Kurtosis <- mean((data[,j] - Mean)^4)/(SD^4)
+        Skewness <- mean((data[,j] - Mean)^3)/(SD^3)
+        line <- paste(colnames(data[j]), Mean, SD, Median, Kurtosis, Skewness, min(data[,j]), max(data[,j]))
+        summary[j-1,] <- c(Mean, SD, Median, Kurtosis, Skewness, min(data[,j]), max(data[,j]))
     }
     write.csv(summary, wfilename, quote = F, row.names = T)
     
