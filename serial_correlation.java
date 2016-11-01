@@ -196,6 +196,16 @@ public class serial_correlation {
 			printwriters[t] = new PrintWriter(new BufferedWriter(new FileWriter(f)));
 			printwriters[t].println("date,bid,ask,");
 		}
+		File file4 = new File(currentdir + datayear + writedir + "\\time_span\\datasize_bid.csv");
+		PrintWriter pw4 = new PrintWriter(new BufferedWriter(new FileWriter(file4)));
+		File file5 = new File(currentdir + datayear + writedir + "\\time_span\\datasize_ask.csv");
+		PrintWriter pw5 = new PrintWriter(new BufferedWriter(new FileWriter(file5)));
+		String firstline = ",";
+		for (int ts : timespan) {
+			firstline = firstline + String.valueOf(ts) + ",";
+		}
+		pw4.println(firstline);
+		pw5.println(firstline);
 
 		for (int i = 0; i < filelist.length; i++) {
 
@@ -279,32 +289,45 @@ public class serial_correlation {
 					bid_span_amount = time_span_parse(bid_timestamp, timespan);
 					ask_span_amount = time_span_parse(ask_timestamp, timespan);
 
+					String wlinebid = rfiledate + ","; // file4 に書き出すためのライン
+					String wlineask = rfiledate + ","; // file5 に書き出すためのライン
 					for (int t = 0; t < timespan.length; t++) {
 						int ts = timespan[t];
+
 						file1 = new File(currentdir + datayear + writedir + "\\time_span\\daily\\" + rfiledate
 								+ ampm + "_" + ts +"_.csv");
 						file2 = new File(currentdir + datayear + writedir + "\\time_span\\scattered\\" + rfiledate
 								+ "_" + ts + "_scattered_.csv");
 						if (bid_span_amount.containsKey(ts) && ask_span_amount.containsKey(ts)) {
+							wlinebid = wlinebid + bid_span_amount.get(ts).size() / 2 + ",";
+							wlineask = wlineask + ask_span_amount.get(ts).size() / 2 + ",";
 							printwriters[t].println(rfiledate + "," + correlation(bid_span_amount.get(ts), true) + ","
 									+ correlation(ask_span_amount.get(ts), true) + ",");
 							filewriter(file1, file2, bid_span_amount.get(ts), ask_span_amount.get(ts), true);
 						} else {
 							if (bid_span_amount.containsKey(ts) && !ask_span_amount.containsKey(ts)) {
+								wlinebid = wlinebid + bid_span_amount.get(ts).size() / 2 + ",";
+								wlineask = wlineask + "0" + ",";
 								printwriters[t].println(rfiledate + "," + correlation(bid_span_amount.get(ts), true) + ","
 										+ correlation(new ArrayList<Integer>(), true) + ",");
 								filewriter(file1, file2, bid_span_amount.get(ts), new ArrayList<Integer>(), true);
 							} else if (!bid_span_amount.containsKey(ts) && ask_span_amount.containsKey(ts)) {
+								wlinebid = wlinebid + "0" + ",";
+								wlineask = wlineask + ask_span_amount.get(ts).size() / 2 + ",";
 								printwriters[t].println(rfiledate + "," + correlation(new ArrayList<Integer>(), true) + ","
 										+ correlation(ask_span_amount.get(ts), true) + ",");
 								filewriter(file1, file2, new ArrayList<Integer>(), ask_span_amount.get(ts), true);
 							} else {
+								wlinebid = wlinebid + "0" + ",";
+								wlineask = wlineask + "0" + ",";
 								printwriters[t].println(rfiledate + "," + correlation(new ArrayList<Integer>(), true) + ","
 										+ correlation(new ArrayList<Integer>(), true) + ",");
 								filewriter(file1, file2, new ArrayList<Integer>(), new ArrayList<Integer>(), true);
 							}
 						}
 					}
+					pw4.println(wlinebid);
+					pw5.println(wlineask);
 					bidseries = new ArrayList<Integer>(); // initialize
 					askseries = new ArrayList<Integer>(); // initialize
 					bid_timestamp = new HashMap<Integer, int[]>(); // initialize
@@ -348,5 +371,7 @@ public class serial_correlation {
 		for (int t = 0; t < timespan.length; t++) {
 			printwriters[t].close();
 		}
+		pw4.close();
+		pw5.close();
 	}
 }

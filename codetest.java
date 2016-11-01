@@ -53,8 +53,15 @@ public class codetest {
 	public static void main(String[] args) {
 		// System.out.println(timeDiffInSeconds(113001,113005));
 		// sorttest();
-		arraytest();
-		List<Integer> list = new ArrayList<>();
-		listsize(new ArrayList<>());
+		//arraytest();
+		//List<Integer> list = new ArrayList<>();
+		//listsize(new ArrayList<>());
+
+		int[] timespan = { 1, 2, 5, 15, 30, 60, 120, 300 }; //時間間隔(秒)
+		String firstline = ",";
+		for (int ts : timespan) {
+			firstline = firstline + String.valueOf(ts) + ",";
+		}
+		System.out.println(firstline + firstline);
 	}
 }
