@@ -29,13 +29,12 @@ for (i in 1:len) {
     colnames(summary) <- c("Mean", "S.D.", "Median", "Kurtosis", "Skewness", "Minimum", "Maximum")
     rownames(summary) <- colnames(data)[2:c]
     for (j in 2:c) {
-        Mean <- mean(data[,j])
-        SD <- sd(data[,j])
-        Median <- median(data[,j])
-        Kurtosis <- mean((data[,j] - Mean)^4)/(SD^4)
-        Skewness <- mean((data[,j] - Mean)^3)/(SD^3)
-        line <- paste(colnames(data[j]), Mean, SD, Median, Kurtosis, Skewness, min(data[,j]), max(data[,j]))
-        summary[j-1,] <- c(Mean, SD, Median, Kurtosis, Skewness, min(data[,j]), max(data[,j]))
+        Mean <- mean(data[,j], na.rm = TRUE)
+        SD <- sd(data[,j], na.rm = TRUE)
+        Median <- median(data[,j], na.rm = TRUE)
+        Kurtosis <- mean((data[,j] - Mean)^4, na.rm = TRUE)/(SD^4)
+        Skewness <- mean((data[,j] - Mean)^3, na.rm = TRUE)/(SD^3)
+        summary[j-1,] <- c(Mean, SD, Median, Kurtosis, Skewness, min(data[,j], na.rm = TRUE), max(data[,j], na.rm = TRUE))
     }
     write.csv(summary, wfilename, quote = F, row.names = T)
     

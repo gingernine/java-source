@@ -21,15 +21,14 @@ for (i in 1:len) {
     summary <- matrix(0, nrow = c-1, ncol = 7) #結果書き出し用の行列
     colnames(summary) <- c("Mean", "S.D.", "Median", "Kurtosis", "Skewness", "Minimum", "Maximum")
     rownames(summary) <- colnames(data)[2:c]
-    for (j in 2:c - 1) {
-        Mean <- mean(data[,j])
-        SD <- sd(data[,j])
-        Median <- median(data[,j])
-        Kurtosis <- mean((data[,j] - Mean)^4)/(SD^4)
-        Skewness <- mean((data[,j] - Mean)^3)/(SD^3)
-        line <- paste(colnames(data[j]), Mean, SD, Median, Kurtosis, Skewness, min(data[,j]), max(data[,j]))
-        summary[j-1,] <- c(Mean, SD, Median, Kurtosis, Skewness, min(data[,j]), max(data[,j]))
-        
+    for (j in 2:c) {
+        Mean <- mean(data[,j], na.rm = TRUE)
+        SD <- sd(data[,j], na.rm = TRUE)
+        Median <- median(data[,j], na.rm = TRUE)
+        Kurtosis <- mean((data[,j] - Mean)^4, na.rm = TRUE)/(SD^4)
+        Skewness <- mean((data[,j] - Mean)^3, na.rm = TRUE)/(SD^3)
+        summary[j-1,] <- c(Mean, SD, Median, Kurtosis, Skewness, min(data[,j], na.rm = TRUE), max(data[,j], na.rm = TRUE))
+
         #ヒストグラムを作成する．
         pngname <- paste(maindir, year, "hist_", filename[i], timespan[j], ".png", sep = "")
         png(pngname)
