@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 // Li; Hui; Endo; Kishimoto (2014) に倣って以下の量を算出する．
 // reference: "A Quontitative Model For Intraday Stock Price Changes Based On Order Flows"
@@ -28,13 +29,13 @@ import java.util.Arrays;
 // 使用データは，ザラバ(continuous session) のみ．(寄付直後～場の最終約定直前)
 public class arrival_frequency {
 
-	private static void count(ArrayList<Integer> list) {
+	private static void count(List<Integer> list) {
 		// 回数を数えるリストで系列を作成するために，リストの最後尾に更新した回数を追加する．
 		int lastval = getlast(list);
 		list.add((lastval + 1));
 	}
 
-	private static int getlast(ArrayList<Integer> list) {
+	private static int getlast(List<Integer> list) {
 		// リストの最後の要素を取り出す．
 		int lastval = 0;
 		try {
@@ -44,7 +45,7 @@ public class arrival_frequency {
 		return lastval;
 	}
 
-	private static double mean(ArrayList<Integer> list) {
+	private static double mean(List<Integer> list) {
 		// リスト内要素の平均値を計算する．
 		int n = list.size();
 		int sum = 0;
@@ -70,14 +71,22 @@ public class arrival_frequency {
 		File rfilepath = new File(currentdir + datayear + datadir); // 読み込むファイルのディレクトリのパス．
 		File[] filelist = rfilepath.listFiles(); // 読み込むファイル名を取得する．
 
-		File file = new File(currentdir + writedir + datayear + "_.csv");
-		PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
-		pw.println("date, Arrival Frequency of Market Buy Orders,Arrival Frequency of Market sell Orders,"
+		String[] filetails = { "\\yearly" + datayear, "\\initial_depth" + datayear + "\\after_up",
+				"\\initial_depth" + datayear + "\\after_down" };
+		File[] files = new File[filetails.length];
+		PrintWriter pw[] = new PrintWriter[filetails.length];
+		for (int q = 0; q < filetails.length; q++) {
+			File file = new File(currentdir + writedir + filetails[q] + "_.csv");
+			pw[q] = new PrintWriter(new BufferedWriter(new FileWriter(file)));
+		}
+		pw[0].println("date, Arrival Frequency of Market Buy Orders,Arrival Frequency of Market sell Orders,"
 				+ "Arrival Frequency of limit Buy Orders,Arrival Frequency of limit sell Orders,"
 				+ "Averege Pieces of One Market Buy Order,Averege Pieces of One Market sell Order,"
 				+ "Averege Pieces of One limit Buy Order,Averege Pieces of One limit sell Order,"
 				+ "Upmovement Times Of the Best Bid,Downmovement Times Of the Best Bid,"
 				+ "Upmovement Times Of the Best Ask,Downmovement Times Of the Best Ask,");
+		pw[1].println("date,time,Quote/Trade,,,bid price,bid depth,ask price,ask depth,na,na");
+		pw[2].println("date,time,Quote/Trade,,,bid price,bid depth,ask price,ask depth,na,na");
 
 		for (int i = 0; i < filelist.length; i++) {
 
@@ -91,18 +100,22 @@ public class arrival_frequency {
 			String line = "";
 
 			// データ抽出に使う変数の定義．
-			ArrayList<Integer> freq_market_buy    = new ArrayList<Integer>(); // arrival frequency of market buy order
-			ArrayList<Integer> freq_market_sell   = new ArrayList<Integer>(); // arrival frequency of market sell order
-			ArrayList<Integer> freq_limit_buy     = new ArrayList<Integer>(); // arrival frequency of limit buy order
-			ArrayList<Integer> freq_limit_sell    = new ArrayList<Integer>(); // arrival frequency of limit sell order
-			ArrayList<Integer> pieces_market_buy  = new ArrayList<Integer>(); // average piecese of one market buy order
-			ArrayList<Integer> pieces_market_sell = new ArrayList<Integer>(); // average piecese of one market sell order
-			ArrayList<Integer> pieces_limit_buy   = new ArrayList<Integer>(); // average piecese of one limit buy order
-			ArrayList<Integer> pieces_limit_sell  = new ArrayList<Integer>(); // average piecese of one limit sell order
-			ArrayList<Integer> up_times_bid       = new ArrayList<Integer>(); // upmovement times of the best bid
-			ArrayList<Integer> down_times_bid     = new ArrayList<Integer>(); // downmovement times of the best bid
-			ArrayList<Integer> up_times_ask       = new ArrayList<Integer>(); // upmovement times of the best ask
-			ArrayList<Integer> down_times_ask     = new ArrayList<Integer>(); // downmovement times of the best ask
+			List<Integer> freq_market_buy    = new ArrayList<Integer>(); // arrival frequency of market buy order
+			List<Integer> freq_market_sell   = new ArrayList<Integer>(); // arrival frequency of market sell order
+			List<Integer> freq_limit_buy     = new ArrayList<Integer>(); // arrival frequency of limit buy order
+			List<Integer> freq_limit_sell    = new ArrayList<Integer>(); // arrival frequency of limit sell order
+			List<Integer> pieces_market_buy  = new ArrayList<Integer>(); // average piecese of one market buy order
+			List<Integer> pieces_market_sell = new ArrayList<Integer>(); // average piecese of one market sell order
+			List<Integer> pieces_limit_buy   = new ArrayList<Integer>(); // average piecese of one limit buy order
+			List<Integer> pieces_limit_sell  = new ArrayList<Integer>(); // average piecese of one limit sell order
+			List<Integer> up_times_bid       = new ArrayList<Integer>(); // upmovement times of the best bid
+			List<Integer> down_times_bid     = new ArrayList<Integer>(); // downmovement times of the best bid
+			List<Integer> up_times_ask       = new ArrayList<Integer>(); // upmovement times of the best ask
+			List<Integer> down_times_ask     = new ArrayList<Integer>(); // downmovement times of the best ask
+			List<Integer> init_depth_bid_up  = new ArrayList<Integer>(); // initial depth of the best bid after up
+			List<Integer> init_depth_bid_down  = new ArrayList<Integer>(); // initial depth of the best bid after down
+			List<Integer> init_depth_ask_up  = new ArrayList<Integer>(); // initial depth of the best ask after up
+			List<Integer> init_depth_ask_down  = new ArrayList<Integer>(); // initial depth of the best ask after down
 			int bidprice = 0; // 最良買い気配値
 			int bidpricetemp = 0; // 最良買い気配値の一時保存
 			int askprice = 0; // 最良売り気配値
@@ -137,7 +150,7 @@ public class arrival_frequency {
 					continuous = true;
 				}
 				if (Arrays.asList(closing).contains(time) && line.split(",", -1)[2].equals("Trade")) {
-					pw.println(rfiledate + "," + getlast(freq_market_buy) + "," + getlast(freq_market_sell) +
+					pw[0].println(rfiledate + "," + getlast(freq_market_buy) + "," + getlast(freq_market_sell) +
 							"," + getlast(freq_limit_buy) + "," + getlast(freq_limit_sell) +
 							"," + mean(pieces_market_buy) + "," + mean(pieces_market_sell) +
 							"," + mean(pieces_limit_buy) + "," + mean(pieces_limit_sell) +
@@ -197,6 +210,7 @@ public class arrival_frequency {
 							pieces_limit_sell.add(askdepth - askdepthtemp);
 						}
 						if (bidprice > bidpricetemp) {
+							pw[1].println(line);
 							count(up_times_bid);
 							if (market_buy_order) {
 								pieces_market_buy.add(tradevolume + biddepth);
@@ -209,6 +223,7 @@ public class arrival_frequency {
 							count(down_times_bid);
 						}
 						if (askprice < askpricetemp) {
+							pw[2].println(line);
 							count(down_times_ask);
 							if (market_sell_order) {
 								pieces_market_sell.add(tradevolume + askdepth);
@@ -249,6 +264,8 @@ public class arrival_frequency {
 			brtxt.close();
 			fr.close();
 		}
-		pw.close();
+		for (int q = 0; q < filetails.length; q++) {
+			pw[q].close();
+		}
 	}
 }
