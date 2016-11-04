@@ -57,7 +57,7 @@ public class arrival_frequency {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2006";
+		String datayear = "\\2007";
 		String datadir = "\\price_or_depth_change\\daily";
 		String writedir = "\\statistics_of_the_limit_order_book"; // 書き込みファイル
 		File newdir = new File(currentdir + writedir);
@@ -184,76 +184,51 @@ public class arrival_frequency {
 						askprice = Integer.parseInt(line.split(",", -1)[7]);
 						askdepth = Integer.parseInt(line.split(",", -1)[8]);
 
-						if (biddepth > biddepthtemp) {
+						if (biddepth > biddepthtemp && bidprice == bidpricetemp) {
 							// 買い気配数量が増加したら買いの指値注文として数える．
 							// 増加分は指値注文数として記録する．
 							count(freq_limit_buy);
 							pieces_limit_buy.add(biddepth - biddepthtemp);
 						}
-						if (askdepth > askdepthtemp) {
+						if (askdepth > askdepthtemp && askprice == askpricetemp) {
 							// 売り気配数量が増加したら売りの指値注文として数える．
 							// 増加分は指値注文数として記録する．
 							count(freq_limit_sell);
 							pieces_limit_sell.add(askdepth - askdepthtemp);
 						}
 						if (bidprice > bidpricetemp) {
-							// 最良買い気配値が上に変化した場合．
 							count(up_times_bid);
 							if (market_buy_order) {
-								// 直前に買いの成行注文が入ったら，
-								// 更新後の最良買い気配値と約定価格が等しい場合 → 板が上に移動
 								pieces_market_buy.add(tradevolume + biddepth);
-								market_buy_order = false;
 							}
-						}
-						if (bidprice < bidpricetemp) {
-							// 最良買い気配値が下に変化した場合．
-							count(down_times_bid);
-							if (market_sell_order) {
-								// 直前に売りの成行注文が入ったら，
-								// 更新後の最良売り気配値と約定価格が等しい場合 → 板が下に移動
-								pieces_market_sell.add(tradevolume + askdepth);
-								market_sell_order = false;
-							}
-						}
-						if (askprice > askpricetemp) {
-							// 最良売り気配値が上に変化した場合．
-							count(up_times_ask);
+						} else if (bidprice == bidpricetemp) {
 							if (market_buy_order) {
-								// 直前に買いの成行注文が入ったら，
-								// 更新後の最良買い気配値と約定価格が等しい場合 → 板が上に移動
-								pieces_market_buy.add(tradevolume + biddepth);
-								market_buy_order = false;
+								pieces_market_buy.add(tradevolume);
 							}
+						} else {
+							count(down_times_bid);
 						}
 						if (askprice < askpricetemp) {
-							// 最良売り気配値が下に変化した場合．
 							count(down_times_ask);
 							if (market_sell_order) {
-								// 直前に売りの成行注文が入ったら，
-								// 更新後の最良売り気配値と約定価格が等しい場合 → 板が下に移動
 								pieces_market_sell.add(tradevolume + askdepth);
-								market_sell_order = false;
 							}
+						} else if (askprice == askpricetemp) {
+							if (market_sell_order) {
+								pieces_market_sell.add(tradevolume);
+							}
+						} else {
+							count(up_times_ask);
 						}
 
 						bidpricetemp = bidprice; // 最良買い気配値を更新
 						biddepthtemp = biddepth; // 最良買い気配数量を更新
 						askpricetemp = askprice; // 最良売り気配値を更新
 						askdepthtemp = askdepth; // 最良売り気配数量を更新
+						market_buy_order = false;
+						market_sell_order = false;
 
-						if (market_buy_order) {
-							pieces_market_buy.add(tradevolume);
-							market_buy_order = false;
-						}
-						if (market_sell_order) {
-							pieces_market_sell.add(tradevolume);
-							market_sell_order = false;
-						}
 					}
-
-					market_buy_order = false; // initialize
-					market_sell_order = false; // initialize
 
 					if (line.split(",", -1)[2].equals("Trade")) {
 
@@ -262,19 +237,11 @@ public class arrival_frequency {
 						if (tradeprice >= askprice) {
 							// 約定価格が直前のbest ask に等しい又は高いなら，買いの成行注文として数える．
 							count(freq_market_buy);
-							if (tradeprice > askprice) {
-								pieces_market_buy.add(tradevolume);
-							} else {
-								market_buy_order = true;
-							}
+							market_buy_order = true;
 						} else if (tradeprice <= bidprice) {
 							// 約定価格が直前のbest bid に等しい又は低いなら，売りの成行注文として数える．
 							count(freq_market_sell);
-							if (tradeprice < bidprice) {
-								pieces_market_sell.add(tradevolume);
-							} else {
-								market_sell_order = true;
-							}
+							market_sell_order = true;
 						}
 					}
 				}
