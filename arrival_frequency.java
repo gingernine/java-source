@@ -58,7 +58,7 @@ public class arrival_frequency {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2007";
+		String datayear = "\\2009";
 		String datadir = "\\price_or_depth_change\\daily";
 		String writedir = "\\statistics_of_the_limit_order_book"; // 書き込みファイル
 		File newdir = new File(currentdir + writedir);
@@ -71,12 +71,11 @@ public class arrival_frequency {
 		File rfilepath = new File(currentdir + datayear + datadir); // 読み込むファイルのディレクトリのパス．
 		File[] filelist = rfilepath.listFiles(); // 読み込むファイル名を取得する．
 
-		String[] filetails = { "\\yearly" + datayear, "\\initial_depth" + datayear + "\\after_up",
+		String[] subpaths = { "\\yearly" + datayear, "\\initial_depth" + datayear + "\\after_up",
 				"\\initial_depth" + datayear + "\\after_down" };
-		File[] files = new File[filetails.length];
-		PrintWriter pw[] = new PrintWriter[filetails.length];
-		for (int q = 0; q < filetails.length; q++) {
-			File file = new File(currentdir + writedir + filetails[q] + "_.csv");
+		PrintWriter pw[] = new PrintWriter[subpaths.length];
+		for (int q = 0; q < subpaths.length; q++) {
+			File file = new File(currentdir + writedir + subpaths[q] + "_.csv");
 			pw[q] = new PrintWriter(new BufferedWriter(new FileWriter(file)));
 		}
 		pw[0].println("date, Arrival Frequency of Market Buy Orders,Arrival Frequency of Market sell Orders,"
@@ -112,10 +111,6 @@ public class arrival_frequency {
 			List<Integer> down_times_bid     = new ArrayList<Integer>(); // downmovement times of the best bid
 			List<Integer> up_times_ask       = new ArrayList<Integer>(); // upmovement times of the best ask
 			List<Integer> down_times_ask     = new ArrayList<Integer>(); // downmovement times of the best ask
-			List<Integer> init_depth_bid_up  = new ArrayList<Integer>(); // initial depth of the best bid after up
-			List<Integer> init_depth_bid_down  = new ArrayList<Integer>(); // initial depth of the best bid after down
-			List<Integer> init_depth_ask_up  = new ArrayList<Integer>(); // initial depth of the best ask after up
-			List<Integer> init_depth_ask_down  = new ArrayList<Integer>(); // initial depth of the best ask after down
 			int bidprice = 0; // 最良買い気配値
 			int bidpricetemp = 0; // 最良買い気配値の一時保存
 			int askprice = 0; // 最良売り気配値
@@ -264,7 +259,7 @@ public class arrival_frequency {
 			brtxt.close();
 			fr.close();
 		}
-		for (int q = 0; q < filetails.length; q++) {
+		for (int q = 0; q < subpaths.length; q++) {
 			pw[q].close();
 		}
 	}

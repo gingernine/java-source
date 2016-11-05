@@ -2,7 +2,7 @@
 
 maindir <- "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output"
 currentdir <- "\\statistics_of_the_limit_order_book\\initial_depth"
-datayear <- "\\2007\\"
+datayear <- "\\2009\\"
 tails <- c( "after_up_", "after_down_" )
 
 for (tail in tails) {
