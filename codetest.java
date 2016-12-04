@@ -57,6 +57,9 @@ public class codetest {
 		//List<Integer> list = new ArrayList<>();
 		//listsize(new ArrayList<>());
 
+		serial_correlation sc = new serial_correlation(); // serial_correlationクラスのインスタンス
+		System.out.println(sc.time_diff_in_seconds(113456,112543));
+
 		int[] timespan = { 1, 2, 5, 15, 30, 60, 120, 300 }; //時間間隔(秒)
 		String firstline = ",";
 		for (int ts : timespan) {

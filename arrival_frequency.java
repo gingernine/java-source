@@ -8,25 +8,32 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+/*
+ Li; Hui; Endo; Kishimoto (2014) に倣って以下の量を算出する．
+ reference: "A Quontitative Model For Intraday Stock Price Changes Based On Order Flows"
+ J Syst Sci Complex (2014) 27: 208-224.
 
-// Li; Hui; Endo; Kishimoto (2014) に倣って以下の量を算出する．
-// reference: "A Quontitative Model For Intraday Stock Price Changes Based On Order Flows"
-// J Syst Sci Complex (2014) 27: 208-224.
-//
-// 以下，今回見るべき量．
-// arrival frequency of market buy order (成行買い注文)
-// arrival frequency of market sell order (成行売り注文)
-// arrival frequency of limit buy order (指値買い注文)
-// arrival frequency of limit sell order (指値売り注文)
-// average pieces of one market buy order (成行買い注文の注文数)
-// average pieces of one market sell order (成行き売り注文の注文数)
-// average pieces of one limit buy order (指値買い注文の注文数)
-// average pieces of one limit sell order (指値売り注文の注文数)
-// upmovement/downmovement times of the best bid (最良買い気配値が上/下に動いた回数)
-// upmovement/downmovement times of the best ask (最良売り気配値が上/下に動いた回数)
-//
-// 上記の量の計算は前場/後場で別にする．
-// 使用データは，ザラバ(continuous session) のみ．(寄付直後～場の最終約定直前)
+ 以下，今回見るべき量．
+ arrival frequency of market buy order (成行買い注文)
+ arrival frequency of market sell order (成行売り注文)
+ arrival frequency of limit buy order (指値買い注文)
+ arrival frequency of limit sell order (指値売り注文)
+ average pieces of one market buy order (成行買い注文の注文数)
+ average pieces of one market sell order (成行き売り注文の注文数)
+ average pieces of one limit buy order (指値買い注文の注文数)
+ average pieces of one limit sell order (指値売り注文の注文数)
+ upmovement/downmovement times of the best bid (最良買い気配値が上/下に動いた回数)
+ upmovement/downmovement times of the best ask (最良売り気配値が上/下に動いた回数)
+
+ ついでに調べるものを以下の3つとする．
+ (1) 到着時間間隔(指値注文時間間隔)
+ (2) サービス時間間隔(成行注文時間間隔)
+ (3) 厚みが0になるまでの時間間隔
+
+ 上記の量の計算は前場/後場で別にする．
+ 使用データは，ザラバ(continuous session) のみ．(寄付直後～場の最終約定直前)
+ */
+
 public class arrival_frequency {
 
 	private static void count(List<Integer> list) {
@@ -55,21 +62,40 @@ public class arrival_frequency {
 		return (double) sum / n;
 	}
 
+	private static void mkdirs(String dirpath) throws IOException {
+		File dir = new File(dirpath);
+		if (!dir.exists()) {
+			dir.mkdirs();
+		}
+	}
+
+	private static void filewriter(List<Integer> list, String dirpath, String filedate, boolean morning ) throws IOException {
+		int n = list.size();
+		mkdirs(dirpath);
+		String ampm = "\\morning\\";
+		if (!morning) {
+			ampm = "\\afternoon\\";
+		}
+		File file = new File(dirpath + ampm + filedate + "_.csv");
+		PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
+		for (int j = 0; j < n; j++) {
+			pw.println(list.get(j));
+		}
+		pw.close();
+	}
+
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2009";
+		String datayear = "\\2007";
 		String datadir = "\\price_or_depth_change\\daily";
 		String writedir = "\\statistics_of_the_limit_order_book"; // 書き込みファイル
-		File newdir = new File(currentdir + writedir);
-		if (!newdir.exists()) {
-			newdir.mkdirs();
-		}
-		String rfilename;
+		mkdirs(currentdir + writedir);
+		String rfilepath;
 		String rfiledate; // 読み込むファイルの日付を格納する．
 
-		File rfilepath = new File(currentdir + datayear + datadir); // 読み込むファイルのディレクトリのパス．
-		File[] filelist = rfilepath.listFiles(); // 読み込むファイル名を取得する．
+		File rfiledir = new File(currentdir + datayear + datadir); // 読み込むファイルのディレクトリのパス．
+		File[] filelist = rfiledir.listFiles(); // 読み込むファイル名を取得する．
 
 		String[] subpaths = { "\\yearly" + datayear, "\\initial_depth" + datayear + "\\after_up",
 				"\\initial_depth" + datayear + "\\after_down" };
@@ -87,11 +113,12 @@ public class arrival_frequency {
 		pw[1].println("date,time,Quote/Trade,,,bid price,bid depth,ask price,ask depth,na,na");
 		pw[2].println("date,time,Quote/Trade,,,bid price,bid depth,ask price,ask depth,na,na");
 
+		serial_correlation sc = new serial_correlation(); // serial_correlationクラスのインスタンス，時間感覚の計算に使う．
+
 		for (int i = 0; i < filelist.length; i++) {
 
-			rfilename = filelist[i].getAbsolutePath();
-			int pathlength = rfilename.split("\\_")[6].length();
-			rfiledate = rfilename.split("\\_")[6].substring(pathlength - 8, pathlength); // 読み込むファイルの日付を取得
+			rfilepath = filelist[i].getAbsolutePath();
+			rfiledate = new File(rfilepath).getName().substring(0, 8); // 読み込むファイルの日付を取得
 
 			System.out.println(rfiledate);
 			FileReader fr = new FileReader(filelist[i]);
@@ -99,18 +126,24 @@ public class arrival_frequency {
 			String line = "";
 
 			// データ抽出に使う変数の定義．
-			List<Integer> freq_market_buy    = new ArrayList<Integer>(); // arrival frequency of market buy order
-			List<Integer> freq_market_sell   = new ArrayList<Integer>(); // arrival frequency of market sell order
-			List<Integer> freq_limit_buy     = new ArrayList<Integer>(); // arrival frequency of limit buy order
-			List<Integer> freq_limit_sell    = new ArrayList<Integer>(); // arrival frequency of limit sell order
-			List<Integer> pieces_market_buy  = new ArrayList<Integer>(); // average piecese of one market buy order
-			List<Integer> pieces_market_sell = new ArrayList<Integer>(); // average piecese of one market sell order
-			List<Integer> pieces_limit_buy   = new ArrayList<Integer>(); // average piecese of one limit buy order
-			List<Integer> pieces_limit_sell  = new ArrayList<Integer>(); // average piecese of one limit sell order
-			List<Integer> up_times_bid       = new ArrayList<Integer>(); // upmovement times of the best bid
-			List<Integer> down_times_bid     = new ArrayList<Integer>(); // downmovement times of the best bid
-			List<Integer> up_times_ask       = new ArrayList<Integer>(); // upmovement times of the best ask
-			List<Integer> down_times_ask     = new ArrayList<Integer>(); // downmovement times of the best ask
+			List<Integer> freq_market_buy      = new ArrayList<Integer>(); // arrival frequency of market buy order
+			List<Integer> freq_market_sell     = new ArrayList<Integer>(); // arrival frequency of market sell order
+			List<Integer> freq_limit_buy       = new ArrayList<Integer>(); // arrival frequency of limit buy order
+			List<Integer> freq_limit_sell      = new ArrayList<Integer>(); // arrival frequency of limit sell order
+			List<Integer> pieces_market_buy    = new ArrayList<Integer>(); // average piecese of one market buy order
+			List<Integer> pieces_market_sell   = new ArrayList<Integer>(); // average piecese of one market sell order
+			List<Integer> pieces_limit_buy     = new ArrayList<Integer>(); // average piecese of one limit buy order
+			List<Integer> pieces_limit_sell    = new ArrayList<Integer>(); // average piecese of one limit sell order
+			List<Integer> up_times_bid         = new ArrayList<Integer>(); // upmovement times of the best bid
+			List<Integer> down_times_bid       = new ArrayList<Integer>(); // downmovement times of the best bid
+			List<Integer> up_times_ask         = new ArrayList<Integer>(); // upmovement times of the best ask
+			List<Integer> down_times_ask       = new ArrayList<Integer>(); // downmovement times of the best ask
+			List<Integer> interval_limit_buy   = new ArrayList<Integer>(); // time interval of the limit buy order
+			List<Integer> interval_limit_sell  = new ArrayList<Integer>(); // time interval of the limit sell order
+			List<Integer> interval_market_buy  = new ArrayList<Integer>(); // time interval of the market buy order
+			List<Integer> interval_market_sell = new ArrayList<Integer>(); // time interval of the market sell order
+			List<Integer> operating_time_bid   = new ArrayList<Integer>();
+			List<Integer> operating_time_ask   = new ArrayList<Integer>();
 			int bidprice = 0; // 最良買い気配値
 			int bidpricetemp = 0; // 最良買い気配値の一時保存
 			int askprice = 0; // 最良売り気配値
@@ -122,6 +155,12 @@ public class arrival_frequency {
 			int tradeprice = 0; // 約定価格
 			int tradevolume = 0; // 約定数量
 			String time = ""; // 時刻
+			int inttime = 0; // 時間間隔計算用
+			int limit_buy_time_temp = 0; // 買い指値注文時間間隔計算用
+			int limit_sell_time_temp = 0; // 売り指値注文時間間隔計算用
+			int market_buy_time_temp = 0; // 買い成行注文時間間隔計算用
+			int market_sell_time_temp = 0; // 売り成行注文時間間隔計算用
+			int timediff = 0; // 時間間隔
 			String[] closing = new String[2];
 			if (Integer.parseInt(rfiledate) < 20110214) {
 				if (Integer.parseInt(rfiledate) < 20090130 && (i == 0 || i == filelist.length - 1)) {
@@ -135,6 +174,7 @@ public class arrival_frequency {
 			}
 			boolean continuous = false; // ザラバを判定する．場中はtrue.
 			boolean isInit = true; // 最良気配に初期値を入れるための判定記号．
+			boolean isMorning = true;
 			boolean market_buy_order = false; // 買いの成行注文が来たらtrue.
 			boolean market_sell_order = false; // 売りの成行注文が来たらtrue.
 
@@ -145,12 +185,25 @@ public class arrival_frequency {
 					continuous = true;
 				}
 				if (Arrays.asList(closing).contains(time) && line.split(",", -1)[2].equals("Trade")) {
+
+					if (inttime > 120000) {
+						isMorning = false;
+					}
 					pw[0].println(rfiledate + "," + getlast(freq_market_buy) + "," + getlast(freq_market_sell) +
 							"," + getlast(freq_limit_buy) + "," + getlast(freq_limit_sell) +
 							"," + mean(pieces_market_buy) + "," + mean(pieces_market_sell) +
 							"," + mean(pieces_limit_buy) + "," + mean(pieces_limit_sell) +
 							"," + getlast(up_times_bid) + "," + getlast(down_times_bid) +
 							"," + getlast(up_times_ask) + "," + getlast(down_times_ask));
+
+					filewriter(interval_limit_buy, currentdir + writedir + "\\time_interval_limit_buy" + datayear,
+							rfiledate, isMorning );
+					filewriter(interval_limit_sell, currentdir + writedir + "\\time_interval_limit_sell" + datayear,
+							rfiledate, isMorning );
+					filewriter(interval_market_buy, currentdir + writedir + "\\time_interval_market_buy" + datayear,
+							rfiledate, isMorning );
+					filewriter(interval_market_sell, currentdir + writedir + "\\time_interval_market_sell" + datayear,
+							rfiledate, isMorning );
 
 					// initialize (morning, afternoon session に分かれている日のため)
 					freq_market_buy    = new ArrayList<Integer>();
@@ -165,11 +218,17 @@ public class arrival_frequency {
 					down_times_bid     = new ArrayList<Integer>();
 					up_times_ask       = new ArrayList<Integer>();
 					down_times_ask     = new ArrayList<Integer>();
+					interval_limit_buy   = new ArrayList<Integer>();
+					interval_limit_sell  = new ArrayList<Integer>();
+					interval_market_buy  = new ArrayList<Integer>();
+					interval_market_sell = new ArrayList<Integer>();
 					continuous = false;
 					isInit = true;
 					market_buy_order = false;
 					market_sell_order = false;
 				}
+
+				inttime = Integer.parseInt(time + line.split(",", -1)[1].split(":")[2]);
 
 				if (continuous && isInit) {
 					// 最良気配に初期値を入れる．
@@ -178,6 +237,10 @@ public class arrival_frequency {
 						biddepthtemp = Integer.parseInt(line.split(",", -1)[6]);
 						askpricetemp = Integer.parseInt(line.split(",", -1)[7]);
 						askdepthtemp = Integer.parseInt(line.split(",", -1)[8]);
+						limit_buy_time_temp = inttime;
+						limit_sell_time_temp = inttime;
+						market_buy_time_temp = inttime;
+						market_sell_time_temp = inttime;
 						isInit = false; // 買い気配に初期値を入れたら初期化完了．
 					}
 				}
@@ -192,26 +255,41 @@ public class arrival_frequency {
 						askprice = Integer.parseInt(line.split(",", -1)[7]);
 						askdepth = Integer.parseInt(line.split(",", -1)[8]);
 
-						if (biddepth > biddepthtemp && bidprice == bidpricetemp) {
-							// 買い気配数量が増加したら買いの指値注文として数える．
-							// 増加分は指値注文数として記録する．
-							count(freq_limit_buy);
-							pieces_limit_buy.add(biddepth - biddepthtemp);
-						}
-						if (askdepth > askdepthtemp && askprice == askpricetemp) {
-							// 売り気配数量が増加したら売りの指値注文として数える．
-							// 増加分は指値注文数として記録する．
-							count(freq_limit_sell);
-							pieces_limit_sell.add(askdepth - askdepthtemp);
-						}
 						if (bidprice > bidpricetemp) {
 							pw[1].println(line);
 							count(up_times_bid);
 							if (market_buy_order) {
+								/*
+								 * 売りの最良気配が0になって板が上に移動した場合，買いの成行注文時間間隔も記録する．
+								 */
+								timediff = sc.time_diff_in_seconds(market_buy_time_temp, inttime);
+								interval_market_buy.add(timediff);
 								pieces_market_buy.add(tradevolume + biddepth);
 							}
+							limit_buy_time_temp = inttime;
+							market_buy_time_temp = inttime;
 						} else if (bidprice == bidpricetemp) {
-							if (market_buy_order) {
+							if (biddepth > biddepthtemp) {
+								/*
+								 * 買い気配数量が増加したら
+								 * (1)指値注文の時間間隔を記録する．
+								 * (2)買いの指値注文として数える．
+								 * (3)増加分は指値注文数として記録する．
+								 */
+								timediff = sc.time_diff_in_seconds(limit_buy_time_temp, inttime);
+								interval_limit_buy.add(timediff);
+								limit_buy_time_temp = inttime;
+								count(freq_limit_buy);
+								pieces_limit_buy.add(biddepth - biddepthtemp);
+							} else if (biddepth < biddepthtemp) {
+								/*
+								 * 買い気配数量が減少したら
+								 * (1)成行注文の時間間隔を記録する．
+								 * (2)減少分は成行注文数として記録する．
+								 */
+								timediff = sc.time_diff_in_seconds(market_buy_time_temp, inttime);
+								interval_market_buy.add(timediff);
+								market_buy_time_temp = inttime;
 								pieces_market_buy.add(tradevolume);
 							}
 						} else {
@@ -221,10 +299,36 @@ public class arrival_frequency {
 							pw[2].println(line);
 							count(down_times_ask);
 							if (market_sell_order) {
+								/*
+								 * 買いの最良気配が0になって板が下に移動した場合，売りの成行注文時間間隔も記録する．
+								 */
+								timediff = sc.time_diff_in_seconds(market_sell_time_temp, inttime);
+								interval_market_sell.add(timediff);
 								pieces_market_sell.add(tradevolume + askdepth);
 							}
+							limit_sell_time_temp = inttime;
+							market_sell_time_temp = inttime;
 						} else if (askprice == askpricetemp) {
-							if (market_sell_order) {
+							if (askdepth > askdepthtemp) {
+								/*
+								 * 売り気配数量が増加したら
+								 * (1)時間間隔を記録する．
+								 * (2)売りの指値注文として数える．
+								 * (3)増加分は指値注文数として記録する．
+								 */
+								timediff = sc.time_diff_in_seconds(limit_sell_time_temp, inttime);
+								interval_limit_sell.add(timediff);
+								limit_sell_time_temp = inttime;
+								count(freq_limit_sell);
+								pieces_limit_sell.add(askdepth - askdepthtemp);
+							} else if (askdepth < askdepthtemp) {
+								/* 買い気配数量が減少したら
+								 * (1)成行注文の時間間隔を記録する．
+								 * (2)減少分は成行注文数として記録する．
+								 */
+								timediff = sc.time_diff_in_seconds(market_sell_time_temp, inttime);
+								interval_market_sell.add(timediff);
+								market_sell_time_temp = inttime;
 								pieces_market_sell.add(tradevolume);
 							}
 						} else {
@@ -245,11 +349,17 @@ public class arrival_frequency {
 						tradeprice = Integer.parseInt(line.split(",", -1)[3]);
 						tradevolume = Integer.parseInt(line.split(",", -1)[4]);
 						if (tradeprice >= askprice) {
-							// 約定価格が直前のbest ask に等しい又は高いなら，買いの成行注文として数える．
+							/*
+							 * 約定価格が直前のbest ask に等しい又は高いなら，
+							 * (1)買いの成行注文として数える．
+							 */
 							count(freq_market_buy);
 							market_buy_order = true;
 						} else if (tradeprice <= bidprice) {
-							// 約定価格が直前のbest bid に等しい又は低いなら，売りの成行注文として数える．
+							/*
+							 *  約定価格が直前のbest bid に等しい又は低いなら，
+							 * (1)売りの成行注文として数える．
+							 */
 							count(freq_market_sell);
 							market_sell_order = true;
 						}

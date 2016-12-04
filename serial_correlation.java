@@ -66,7 +66,7 @@ public class serial_correlation {
 		return cov / Math.sqrt(var1 * var2);
 	}
 
-	private static int time_diff_in_seconds(int timeBefore, int timeAfter) {
+	public static int time_diff_in_seconds(int timeBefore, int timeAfter) {
 		// 秒単位時刻(初めの2桁がhour, 次の2桁がminute, 最後の2桁がsecond となる数値データ)の差を 秒 で返す．
 		int secondB = timeBefore % 100;
 		int secondA = timeAfter % 100;
