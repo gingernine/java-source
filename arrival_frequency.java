@@ -62,6 +62,17 @@ public class arrival_frequency {
 		return (double) sum / n;
 	}
 
+	private static double variance(List<Integer> list) {
+		// リスト内要素の不偏分散を計算する．
+		int n = list.size();
+		double sum = 0;
+		double average = mean(list);
+		for (int j = 0; j < n; j++) {
+			sum = sum + (((Integer) list.get(j)).intValue() - average)*(((Integer) list.get(j)).intValue() - average);
+		}
+		return sum / (n-1);
+	}
+
 	private static void mkdirs(String dirpath) throws IOException {
 		File dir = new File(dirpath);
 		if (!dir.exists()) {
@@ -90,7 +101,7 @@ public class arrival_frequency {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2006";
+		String datayear = "\\2009";
 		String datadir = "\\price_or_depth_change\\daily";
 		String writedir = "\\statistics_of_the_limit_order_book"; // 書き込みファイル
 		mkdirs(currentdir + writedir);
@@ -111,6 +122,8 @@ public class arrival_frequency {
 				+ "Arrival Frequency of limit Buy Orders,Arrival Frequency of limit sell Orders,"
 				+ "Averege Pieces of One Market Buy Order,Averege Pieces of One Market sell Order,"
 				+ "Averege Pieces of One limit Buy Order,Averege Pieces of One limit sell Order,"
+				+ "Unbiased Variance of Pieces of One Market Buy Order,Unbiased Variance of Pieces of One Market sell Order,"
+				+ "Unbiased Variance of Pieces of One limit Buy Order,Unbiased Variance of Pieces of One limit sell Order,"
 				+ "Upmovement Times Of the Best Bid,Downmovement Times Of the Best Bid,"
 				+ "Upmovement Times Of the Best Ask,Downmovement Times Of the Best Ask,");
 		pw[1].println("date,time,Quote/Trade,,,bid price,bid depth,ask price,ask depth,na,na");
@@ -197,16 +210,26 @@ public class arrival_frequency {
 							"," + getlast(freq_limit_buy) + "," + getlast(freq_limit_sell) +
 							"," + mean(pieces_market_buy) + "," + mean(pieces_market_sell) +
 							"," + mean(pieces_limit_buy) + "," + mean(pieces_limit_sell) +
+							"," + variance(pieces_market_buy) + "," + variance(pieces_market_sell) +
+							"," + variance(pieces_limit_buy) + "," + variance(pieces_limit_sell) +
 							"," + getlast(up_times_bid) + "," + getlast(down_times_bid) +
 							"," + getlast(up_times_ask) + "," + getlast(down_times_ask));
 
-					filewriter(interval_limit_buy, currentdir + writedir + "\\time_interval_limit_buy" + datayear,
+					filewriter(pieces_limit_buy, currentdir + writedir + "\\pieces\\pieces_limit_buy" + datayear,
 							rfiledate, isMorning );
-					filewriter(interval_limit_sell, currentdir + writedir + "\\time_interval_limit_sell" + datayear,
+					filewriter(pieces_limit_sell, currentdir + writedir + "\\pieces\\pieces_limit_sell" + datayear,
 							rfiledate, isMorning );
-					filewriter(interval_market_buy, currentdir + writedir + "\\time_interval_market_buy" + datayear,
+					filewriter(pieces_market_buy, currentdir + writedir + "\\pieces\\pieces_market_buy" + datayear,
 							rfiledate, isMorning );
-					filewriter(interval_market_sell, currentdir + writedir + "\\time_interval_market_sell" + datayear,
+					filewriter(pieces_market_sell, currentdir + writedir + "\\pieces\\pieces_market_sell" + datayear,
+							rfiledate, isMorning );
+					filewriter(interval_limit_buy, currentdir + writedir + "\\time_interval\\time_interval_limit_buy" + datayear,
+							rfiledate, isMorning );
+					filewriter(interval_limit_sell, currentdir + writedir + "\\time_interval\\time_interval_limit_sell" + datayear,
+							rfiledate, isMorning );
+					filewriter(interval_market_buy, currentdir + writedir + "\\time_interval\\time_interval_market_buy" + datayear,
+							rfiledate, isMorning );
+					filewriter(interval_market_sell, currentdir + writedir + "\\time_interval\\time_interval_market_sell" + datayear,
 							rfiledate, isMorning );
 
 					// initialize (morning, afternoon session に分かれている日のため)
@@ -300,7 +323,7 @@ public class arrival_frequency {
 								timediff = sc.time_diff_in_seconds(market_sell_time_temp, inttime);
 								interval_market_sell.add(timediff);
 								if (askprice - bidprice == 10) {
-									pieces_market_sell.add(tradevolume + biddepth);
+									pieces_market_sell.add(tradevolume + askdepth);
 								} else if (askprice - bidprice > 10) {
 									pieces_market_sell.add(tradevolume);
 								}
@@ -318,7 +341,7 @@ public class arrival_frequency {
 								timediff = sc.time_diff_in_seconds(market_buy_time_temp, inttime);
 								interval_market_buy.add(timediff);
 								if (askprice - bidprice == 10) {
-									pieces_market_buy.add(tradevolume + askdepth);
+									pieces_market_buy.add(tradevolume + biddepth);
 								} else if (askprice - bidprice > 10) {
 									pieces_market_buy.add(tradevolume);
 								}
