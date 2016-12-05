@@ -7,13 +7,17 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
 
-//前回まで：(nikkei needs)2010年7月16日以後のフォーマットでの日経平均先物の約定データ，最良気配値のデータ(限月調整済み)を抽出するプログラム
-//		上で抽出したデータを用いて，ロイター社のコンマ秒データの形式に近いものを作成する．
-//
-//今回:rawcsvフォルダのdailyデータから，ザラバにおいて最良買い気配値が最良売り気配値より大きい(>の関係)場合のデータを抽出する．
-public class bid_more_than_ask {
+/*
+ * rawcsv_2フォルダのdailyデータから，ザラバにおいて
+ * (1)最良買い気配値が最良売り気配値より大きい(>の関係)場合のデータ
+ * (2)最良買い気配値が最良売り気配値と等しい(=の関係)場合のデータ
+ * (3)最良気配値が0となる箇所
+ * (4)最良気配が2ティック以上離れている箇所
+ * を抽出する．
+ */
+public class error_detector {
 
-	private static String lastTrade(File file, int closing) throws IOException {
+	public static String lastTrade(File file, int closing) throws IOException {
 
 		FileReader fr = new FileReader(file);
 		BufferedReader br = new BufferedReader(fr);
@@ -31,15 +35,29 @@ public class bid_more_than_ask {
 		return lasttrade;
 	}
 
+	private static void removeEmptyFiles(String dirpath) throws IOException {
+		/*
+		 * ディレクトリ内の空ファイルを削除する．
+		 */
+		File file = new File(dirpath); // 読み込むファイルのディレクトリのパス．
+		File[] filelist = file.listFiles(); // 読み込むファイル名を取得する．
+		for (int i = 0; i < filelist.length; i++) {
+			if (filelist[i].length() == 0) {
+				filelist[i].delete();
+			}
+		}
+	}
+
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
 		String[] datayears = { "\\2006", "\\2007", "\\2008", "\\2009", "\\2010", "\\2011", "\\2012", "\\2013", "\\2014",
 				"\\2015", "\\2016" };
 		String datadir = "\\rawcsv_2\\daily";
-		String writedir_more = "\\bid_more_than_ask_in_rawcsv_2"; // エラーを発見したときのみファイルを作成
-		String writedir_equal = "\\bid_equal_to_ask_in_rawcsv_2"; // エラーを発見したときのみファイルを作成
+		String writedir_more = "\\bid_more_than_ask_in_rawcsv_2"; // 最良買い気配値が最良売り気配値より大きい(>の関係)場合のデータ
+		String writedir_equal = "\\bid_equal_to_ask_in_rawcsv_2"; // 最良買い気配値が最良売り気配値と等しい(=の関係)場合のデータ
 		String writedir_na = "\\bid_or_ask_is_na_in_rawcsv_2"; // Quoteのデータの内，欠損箇所を記録する．
+		String writedir_twotick = "\\bid_ask_spread_two_tick"; // 最良気配が2ティック以上離れている箇所を記録する．
 		// String datadir = "\\price_or_depth_change\\daily";
 		String rfilepath;
 		String rfiledate; // 読み込むファイルの日付を格納する．
@@ -52,6 +70,9 @@ public class bid_more_than_ask {
 			if (!newdir.exists())
 				newdir.mkdirs();
 			newdir = new File(currentdir + datayear + writedir_na + "\\daily");
+			if (!newdir.exists())
+				newdir.mkdirs();
+			newdir = new File(currentdir + datayear + writedir_twotick + "\\daily");
 			if (!newdir.exists())
 				newdir.mkdirs();
 
@@ -69,10 +90,14 @@ public class bid_more_than_ask {
 				String line = "";
 
 				// エラー回避のためダミーファイルを用意する
-				File file = new File("C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\dummy\\dummy.txt");
-				PrintWriter pw_more = new PrintWriter(new BufferedWriter(new FileWriter(file)));
-				PrintWriter pw_equal = new PrintWriter(new BufferedWriter(new FileWriter(file)));
-				PrintWriter pw_na = new PrintWriter(new BufferedWriter(new FileWriter(file)));
+				File file1 = new File(currentdir + datayear + writedir_more + "\\daily\\" + rfiledate + "_.csv");
+				PrintWriter pw_more = new PrintWriter(new BufferedWriter(new FileWriter(file1)));
+				File file2 = new File(currentdir + datayear + writedir_equal + "\\daily\\" + rfiledate + "_.csv");
+				PrintWriter pw_equal = new PrintWriter(new BufferedWriter(new FileWriter(file2)));
+				File file3 = new File(currentdir + datayear + writedir_na + "\\daily\\" + rfiledate + "_.csv");
+				PrintWriter pw_na = new PrintWriter(new BufferedWriter(new FileWriter(file3)));
+				File file4 = new File(currentdir + datayear + writedir_twotick + "\\daily\\" + rfiledate + "_.csv");
+				PrintWriter pw_twotick = new PrintWriter(new BufferedWriter(new FileWriter(file4)));
 
 				// データ抽出に使う変数の定義．
 				int bidprice = 0; // 最良買い気配値
@@ -89,10 +114,6 @@ public class bid_more_than_ask {
 					closing[0] = lastTrade(filelist[i], 1510);
 				}
 				boolean continuous = false; // ザラバを判定する．場中はtrue.
-				boolean writing_more = false; // in writing: 1, not in writing:
-												// 0.
-				boolean writing_equal = false; // in writing: 1, not in writing:
-												// 0.
 
 				while ((line = brtxt.readLine()) != null) {
 
@@ -111,25 +132,19 @@ public class bid_more_than_ask {
 							bidprice = Integer.parseInt(line.split(",", -1)[5]);
 							askprice = Integer.parseInt(line.split(",", -1)[7]);
 
+							if (bidprice*askprice == 0) {
+								// 価格が0または厚みが0の箇所を記録する．
+								pw_na.println(line);
+							}
+							if (askprice - bidprice > 10) {
+								// 最良気配値が2ティック以上離れている箇所を記録する．
+								pw_twotick.println(line);
+							}
 							if (bidprice > askprice) {
-								// 最良買い気配値 > 最良売り気配値の場合に記録する．
-								file = new File(
-										currentdir + datayear + writedir_more + "\\daily\\" + rfiledate + "_.csv");
-								if (!writing_more) {
-									pw_more.close();
-									pw_more = new PrintWriter(new BufferedWriter(new FileWriter(file)));
-									writing_more = true;
-								}
+								// 最良買い気配値 > 最良売り気配値の場合に記録する
 								pw_more.println(line);
 							} else if (bidprice == askprice) {
 								// 最良買い気配値 == 最良売り気配値の場合に記録する．
-								file = new File(
-										currentdir + datayear + writedir_equal + "\\daily\\" + rfiledate + "_.csv");
-								if (!writing_equal) {
-									pw_equal.close();
-									pw_equal = new PrintWriter(new BufferedWriter(new FileWriter(file)));
-									writing_equal = true;
-								}
 								pw_equal.println(line);
 							}
 						}
@@ -140,7 +155,12 @@ public class bid_more_than_ask {
 				pw_more.close();
 				pw_equal.close();
 				pw_na.close();
+				pw_twotick.close();
 			}
+			removeEmptyFiles(currentdir + datayear + writedir_more + "\\daily");
+			removeEmptyFiles(currentdir + datayear + writedir_equal + "\\daily");
+			removeEmptyFiles(currentdir + datayear + writedir_na + "\\daily");
+			removeEmptyFiles(currentdir + datayear + writedir_twotick + "\\daily");
 		}
 	}
 }

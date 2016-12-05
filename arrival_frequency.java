@@ -71,11 +71,14 @@ public class arrival_frequency {
 
 	private static void filewriter(List<Integer> list, String dirpath, String filedate, boolean morning ) throws IOException {
 		int n = list.size();
-		mkdirs(dirpath);
 		String ampm = "\\morning\\";
 		if (!morning) {
 			ampm = "\\afternoon\\";
 		}
+		if (Integer.parseInt(filedate) >= 20110214) {
+			ampm = "";
+		}
+		mkdirs(dirpath + ampm);
 		File file = new File(dirpath + ampm + filedate + "_.csv");
 		PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
 		for (int j = 0; j < n; j++) {
@@ -87,7 +90,7 @@ public class arrival_frequency {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2007";
+		String datayear = "\\2006";
 		String datadir = "\\price_or_depth_change\\daily";
 		String writedir = "\\statistics_of_the_limit_order_book"; // 書き込みファイル
 		mkdirs(currentdir + writedir);
@@ -162,15 +165,16 @@ public class arrival_frequency {
 			int market_sell_time_temp = 0; // 売り成行注文時間間隔計算用
 			int timediff = 0; // 時間間隔
 			String[] closing = new String[2];
+			error_detector ed = new error_detector();
 			if (Integer.parseInt(rfiledate) < 20110214) {
 				if (Integer.parseInt(rfiledate) < 20090130 && (i == 0 || i == filelist.length - 1)) {
-					closing[0] = "1110";
+					closing[0] = ed.lastTrade(filelist[i], 1110);
 				} else {
-					closing[0] = "1100";
-					closing[1] = "1510";
+					closing[0] = ed.lastTrade(filelist[i], 1100);
+					closing[1] = ed.lastTrade(filelist[i], 1510);
 				}
 			} else {
-				closing[0] = "1510";
+				closing[0] = ed.lastTrade(filelist[i], 1510);
 			}
 			boolean continuous = false; // ザラバを判定する．場中はtrue.
 			boolean isInit = true; // 最良気配に初期値を入れるための判定記号．
@@ -184,7 +188,7 @@ public class arrival_frequency {
 				if (line.split(",", -1)[9].equals("  1")) {
 					continuous = true;
 				}
-				if (Arrays.asList(closing).contains(time) && line.split(",", -1)[2].equals("Trade")) {
+				if (Arrays.asList(closing).contains(line)) {
 
 					if (inttime > 120000) {
 						isMorning = false;
@@ -228,7 +232,11 @@ public class arrival_frequency {
 					market_sell_order = false;
 				}
 
-				inttime = Integer.parseInt(time + line.split(",", -1)[1].split(":")[2]);
+				try {
+					inttime = Integer.parseInt(time + line.split(",", -1)[1].split(":")[2]);
+				} catch (Exception e) {
+					inttime = Integer.parseInt(time + "00");
+				}
 
 				if (continuous && isInit) {
 					// 最良気配に初期値を入れる．
@@ -256,18 +264,12 @@ public class arrival_frequency {
 						askdepth = Integer.parseInt(line.split(",", -1)[8]);
 
 						if (bidprice > bidpricetemp) {
-							pw[1].println(line);
-							count(up_times_bid);
-							if (market_buy_order) {
-								/*
-								 * 売りの最良気配が0になって板が上に移動した場合，買いの成行注文時間間隔も記録する．
-								 */
-								timediff = sc.time_diff_in_seconds(market_buy_time_temp, inttime);
-								interval_market_buy.add(timediff);
-								pieces_market_buy.add(tradevolume + biddepth);
+							if (askprice - bidprice == 10) {
+								pw[1].println(line);
 							}
+							count(up_times_bid);
 							limit_buy_time_temp = inttime;
-							market_buy_time_temp = inttime;
+							market_sell_time_temp = inttime;
 						} else if (bidprice == bidpricetemp) {
 							if (biddepth > biddepthtemp) {
 								/*
@@ -287,27 +289,42 @@ public class arrival_frequency {
 								 * (1)成行注文の時間間隔を記録する．
 								 * (2)減少分は成行注文数として記録する．
 								 */
-								timediff = sc.time_diff_in_seconds(market_buy_time_temp, inttime);
-								interval_market_buy.add(timediff);
-								market_buy_time_temp = inttime;
-								pieces_market_buy.add(tradevolume);
+								timediff = sc.time_diff_in_seconds(market_sell_time_temp, inttime);
+								interval_market_sell.add(timediff);
+								market_sell_time_temp = inttime;
+								pieces_market_sell.add(biddepthtemp - biddepth);
 							}
 						} else {
 							count(down_times_bid);
-						}
-						if (askprice < askpricetemp) {
-							pw[2].println(line);
-							count(down_times_ask);
 							if (market_sell_order) {
-								/*
-								 * 買いの最良気配が0になって板が下に移動した場合，売りの成行注文時間間隔も記録する．
-								 */
 								timediff = sc.time_diff_in_seconds(market_sell_time_temp, inttime);
 								interval_market_sell.add(timediff);
-								pieces_market_sell.add(tradevolume + askdepth);
+								if (askprice - bidprice == 10) {
+									pieces_market_sell.add(tradevolume + biddepth);
+								} else if (askprice - bidprice > 10) {
+									pieces_market_sell.add(tradevolume);
+								}
+							}
+							limit_buy_time_temp = inttime;
+							market_sell_time_temp = inttime;
+						}
+
+						if (askprice > askpricetemp) {
+							count(up_times_ask);
+							if (market_buy_order) {
+								/*
+								 * 売りの最良気配が0になって板が上に移動した場合，買いの成行注文時間間隔も記録する．
+								 */
+								timediff = sc.time_diff_in_seconds(market_buy_time_temp, inttime);
+								interval_market_buy.add(timediff);
+								if (askprice - bidprice == 10) {
+									pieces_market_buy.add(tradevolume + askdepth);
+								} else if (askprice - bidprice > 10) {
+									pieces_market_buy.add(tradevolume);
+								}
 							}
 							limit_sell_time_temp = inttime;
-							market_sell_time_temp = inttime;
+							market_buy_time_temp = inttime;
 						} else if (askprice == askpricetemp) {
 							if (askdepth > askdepthtemp) {
 								/*
@@ -322,17 +339,22 @@ public class arrival_frequency {
 								count(freq_limit_sell);
 								pieces_limit_sell.add(askdepth - askdepthtemp);
 							} else if (askdepth < askdepthtemp) {
-								/* 買い気配数量が減少したら
+								/* 売り気配数量が減少したら
 								 * (1)成行注文の時間間隔を記録する．
 								 * (2)減少分は成行注文数として記録する．
 								 */
-								timediff = sc.time_diff_in_seconds(market_sell_time_temp, inttime);
-								interval_market_sell.add(timediff);
-								market_sell_time_temp = inttime;
-								pieces_market_sell.add(tradevolume);
+								timediff = sc.time_diff_in_seconds(market_buy_time_temp, inttime);
+								interval_market_buy.add(timediff);
+								market_buy_time_temp = inttime;
+								pieces_market_buy.add(askdepthtemp - askdepth);
 							}
 						} else {
-							count(up_times_ask);
+							if (askprice - bidprice == 10) {
+								pw[2].println(line);
+							}
+							count(down_times_ask);
+							limit_sell_time_temp = inttime;
+							market_buy_time_temp = inttime;
 						}
 
 						bidpricetemp = bidprice; // 最良買い気配値を更新
@@ -341,21 +363,20 @@ public class arrival_frequency {
 						askdepthtemp = askdepth; // 最良売り気配数量を更新
 						market_buy_order = false;
 						market_sell_order = false;
-
 					}
 
 					if (line.split(",", -1)[2].equals("Trade")) {
 
 						tradeprice = Integer.parseInt(line.split(",", -1)[3]);
 						tradevolume = Integer.parseInt(line.split(",", -1)[4]);
-						if (tradeprice >= askprice) {
+						if (tradeprice == askprice) {
 							/*
 							 * 約定価格が直前のbest ask に等しい又は高いなら，
 							 * (1)買いの成行注文として数える．
 							 */
 							count(freq_market_buy);
 							market_buy_order = true;
-						} else if (tradeprice <= bidprice) {
+						} else if (tradeprice == bidprice) {
 							/*
 							 *  約定価格が直前のbest bid に等しい又は低いなら，
 							 * (1)売りの成行注文として数える．
