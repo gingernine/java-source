@@ -79,6 +79,8 @@ public class error_detector {
 			File rfile = new File(currentdir + datayear + datadir); // 読み込むファイルのディレクトリのパス．
 			File[] filelist = rfile.listFiles(); // 読み込むファイル名を取得する．
 
+			serial_correlation sc = new serial_correlation(); // serial_correlationクラスのインスタンス，時間感覚の計算に使う．
+
 			for (int i = 0; i < filelist.length; i++) {
 
 				rfilepath = filelist[i].getAbsolutePath();
@@ -102,6 +104,12 @@ public class error_detector {
 				// データ抽出に使う変数の定義．
 				int bidprice = 0; // 最良買い気配値
 				int askprice = 0; // 最良売り気配値
+				String time = ""; // String型の時間.
+				int inttime = 0; // int型の時間.
+				int continuoustime = 0; // ザラバ時間を計測する．
+				int finishtime = 0; // ザラバの終了時間
+				String begin_two_tick_string = "";
+				int begin_two_tick = 0; // 最良気配値が2ティック以上離れたところの時間を記録する．
 				String[] closing = new String[2];
 				if (Integer.parseInt(rfiledate) < 20110214) {
 					if (Integer.parseInt(rfiledate) < 20090130 && (i == 0 || i == filelist.length - 1)) {
@@ -114,14 +122,38 @@ public class error_detector {
 					closing[0] = lastTrade(filelist[i], 1510);
 				}
 				boolean continuous = false; // ザラバを判定する．場中はtrue.
+				boolean TickIsTwo = false; // 最良気配値が2ティック以上離れている時間はtrue.
+				int t = 0; // closing配列の番号を指定．ザラバ時間の計算に使う．
 
 				while ((line = brtxt.readLine()) != null) {
 
+					time = line.split(",", -1)[1];
+
+					try {
+						inttime = Integer.parseInt(time.split(":")[0]
+								+ time.split(":")[1]
+								+ time.split(":")[2]);
+					} catch (Exception e) {
+						inttime = Integer.parseInt(time.split(":")[0]
+								+ time.split(":")[1] + "00");
+					}
+
 					if (line.split(",", -1)[9].equals("  1")) {
+						try {
+							finishtime = Integer.parseInt(closing[t].split(",", -1)[1].split(":")[0]
+									+ closing[t].split(",", -1)[1].split(":")[1]
+									+ closing[t].split(",", -1)[1].split(":")[2]);
+						} catch (Exception e) {
+							finishtime = Integer.parseInt(closing[t].split(",", -1)[1].split(":")[0]
+									+ closing[t].split(",", -1)[1].split(":")[1] + "00");
+						}
+						continuoustime = sc.time_diff_in_seconds(inttime, finishtime);
 						continuous = true;
 					}
 					if (Arrays.asList(closing).contains(line)) {
+						t = 1;
 						continuous = false;
+						TickIsTwo = false;
 					}
 
 					if (continuous) {
@@ -132,13 +164,25 @@ public class error_detector {
 							bidprice = Integer.parseInt(line.split(",", -1)[5]);
 							askprice = Integer.parseInt(line.split(",", -1)[7]);
 
+							if (TickIsTwo && askprice - bidprice == 10) {
+								// 2ティック以上離れていたのが1ティックになったら時間計測終了してファイルに書き込む．
+								pw_twotick.println(begin_two_tick_string + "," + time + ","
+										+ sc.time_diff_in_seconds(begin_two_tick, inttime)
+										+ "," + continuoustime);
+								TickIsTwo = false;
+							}
+
 							if (bidprice*askprice == 0) {
 								// 価格が0または厚みが0の箇所を記録する．
 								pw_na.println(line);
 							}
-							if (askprice - bidprice > 10) {
+							if (askprice - bidprice > 10 && bidprice*askprice != 0) {
 								// 最良気配値が2ティック以上離れている箇所を記録する．
-								pw_twotick.println(line);
+								if (!TickIsTwo) {
+									begin_two_tick_string = time;
+									begin_two_tick = inttime;
+									TickIsTwo = true;
+								}
 							}
 							if (bidprice > askprice) {
 								// 最良買い気配値 > 最良売り気配値の場合に記録する

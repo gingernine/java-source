@@ -1,11 +1,11 @@
 #注文時間間隔及び一回の注文単位数のヒストグラムを作成する．
 
 maindir <- "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output"
-currentdir <- "\\statistics_of_the_limit_order_book\\pieces\\"
-#currentdir <- "\\statistics_of_the_limit_order_book\\time_interval\\"
+#currentdir <- "\\statistics_of_the_limit_order_book\\pieces\\"
+currentdir <- "\\statistics_of_the_limit_order_book\\time_interval\\"
 datayear <- "\\2007"
-branchs <- c( "pieces_limit_buy", "pieces_limit_sell", "pieces_market_buy", "pieces_market_sell" )
-#branchs <- c( "time_interval_limit_buy", "time_interval_limit_sell", "time_interval_market_buy", "time_interval_market_sell" )
+#branchs <- c( "pieces_limit_buy", "pieces_limit_sell", "pieces_market_buy", "pieces_market_sell" )
+branchs <- c( "time_interval_limit_buy", "time_interval_limit_sell", "time_interval_market_buy", "time_interval_market_sell" )
 sessions <- c( "\\morning", "\\afternoon" )
 
 for (branch in branchs) {
@@ -44,7 +44,7 @@ for (branch in branchs) {
             pngname <- paste(pngdir, "\\", date, "_.png", sep = "", collapse = NULL)
             png(pngname)
             hist(data[, 1], n=100, 
-                 main = paste("the_histgram_of_", branch, session, sep = "", collapse = NULL),
+                 main = paste("the_histogram_of_", branch, session, sep = "", collapse = NULL),
                  xlab = "", ylab = "", col = "#b2222220")
             dev.off()
         }
