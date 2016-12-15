@@ -9,7 +9,7 @@ sessions <- c( "\\morning", "\\afternoon" )
 
 sum <- matrix(0, ncol=2, nrow=2)
 rownames(sum) <- c( "Mean", "S.D." )
-colnames(sum) <- c( "\\T_A", "\\T_B" )
+colnames(sum) <- c( "$T_A$", "$T_B$" )
 i <- 1
 
 for (ba in bidask) {
@@ -42,7 +42,7 @@ for (ba in bidask) {
     #tex code
     code <- ""
     for (cname in colnames(sum)) {
-        code <- paste(code, " & ", "\\", cname, sep="", collapse=NULL)
+        code <- paste(code, " & ", cname, sep="", collapse=NULL)
     }
     code <- paste(code, " \\ \\hline", sep="", collapse=NULL)
     code <- matrix(code, ncol=1, nrow=1)

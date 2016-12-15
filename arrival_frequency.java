@@ -295,8 +295,6 @@ public class arrival_frequency {
 						if (bidprice > bidpricetemp) {
 							pw[1].println(line);
 							count(up_times_bid);
-							limit_buy_time_temp = inttime;
-							market_sell_time_temp = inttime;
 							operating_time_bid_temp = inttime;
 						} else if (bidprice == bidpricetemp) {
 							if (biddepth > biddepthtemp) {
@@ -344,7 +342,6 @@ public class arrival_frequency {
 								timediff = sc.time_diff_in_seconds(operating_time_bid_temp, inttime);
 								operating_time_bid.add(timediff);
 							}
-							limit_buy_time_temp = inttime;
 							market_sell_time_temp = inttime;
 							operating_time_bid_temp = inttime;
 						}
@@ -369,7 +366,6 @@ public class arrival_frequency {
 								timediff = sc.time_diff_in_seconds(operating_time_ask_temp, inttime);
 								operating_time_ask.add(timediff);
 							}
-							limit_sell_time_temp = inttime;
 							market_buy_time_temp = inttime;
 							operating_time_ask_temp = inttime;
 						} else if (askprice == askpricetemp) {
@@ -400,8 +396,6 @@ public class arrival_frequency {
 						} else {
 							pw[2].println(line);
 							count(down_times_ask);
-							limit_sell_time_temp = inttime;
-							market_buy_time_temp = inttime;
 							operating_time_ask_temp = inttime;
 						}
 
