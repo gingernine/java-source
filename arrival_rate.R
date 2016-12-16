@@ -16,14 +16,15 @@ for (branch in branchs) {
         Mean <- c(Mean, data[,"Mean"])
     }
     Mean <- Mean[-1]
-    if (length(table[,1]) == 1) {
+    if (i == 1) {
         table <- matrix(0, nrow=length(Mean), ncol=6)
-        colnames(table) <- c("lambda_B","lambda_A","mu_A","mu_B", "rho_B", "rho_A")
+        colnames(table) <- c("lambda_B", "lambda_A", "mu_A", "mu_B", "rho_B", "rho_A")
     }
     table[,i] <- Mean
     i <- i+1
 }
 
+print(table)
 for (r in seq(nrow(table))) {
     for (c in 1:4) {
         table[r,c] <- 1/table[r,c]

@@ -35,15 +35,20 @@ for (branch in branchs) {
             }
             
             Exp <- matrix(0, ncol=1,nrow=50)
+            lambda <- 1/mean(data[,1])
             for(i in 1:50) {
-                Exp[i,1] <- integrate(f_exp, i-1, i, 1/mean(data[,1]))$value
+                Exp[i,1] <- integrate(f_exp, i-1, i, lambda)$value
             }
             
-            barmax <- max( max(freq[,1]), max(Exp[,1]) )
+            #2秒まではまとめる．
+            freq[2,1] <- freq[1,1] + freq[2,1]
+            Exp[2,1] <- Exp[1,1] + Exp[2,1]
             
-            barplot(freq[,1], xlim=c(0,50), ylim=c(0,barmax))
+            barmax <- max( max(freq[,1][-1]), max(sum(freq[,1])*Exp[,1][-1]) )
+            
+            barplot(freq[,1][-1], xlim=c(0,50), ylim=c(0,barmax))
             par(new=T)
-            barplot(sum(freq[,1])*Exp[,1], xlim=c(0,50), ylim=c(0,barmax), col="#b2222220", main=filepath)
+            barplot(sum(freq[,1])*Exp[,1][-1], xlim=c(0,50), ylim=c(0,barmax), col="#b2222220", main=filepath)
             
             #keypressed <- 0
             #while(keypressed == 0) {
@@ -119,4 +124,3 @@ for (branch in branchs) {
         write.csv(table[-1,], wfilename, quote = F, row.names = T)
     }
 }
-    
