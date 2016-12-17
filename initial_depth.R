@@ -17,10 +17,10 @@ for (i in 1:length(data[,1])) {
             pressed <- readline()
         }
         hist(ask[,1][-1], n=25)
-        pressed <- 0
-        while(pressed == 0) {
-            pressed <- readline()
-        }
+        #pressed <- 0
+        #while(pressed == 0) {
+        #    pressed <- readline()
+        #}
         bid <- matrix(0,1,1)
         ask <- matrix(0,1,1)
     }

@@ -24,6 +24,7 @@ import java.util.List;
  average pieces of one limit sell order (指値売り注文の注文数)
  upmovement/downmovement times of the best bid (最良買い気配値が上/下に動いた回数)
  upmovement/downmovement times of the best ask (最良売り気配値が上/下に動いた回数)
+ time interval of fluctuations (板が移動する時間間隔(上下板同時に動いた時のみ))
 
  ついでに調べるものを以下の3つとする．
  (1) 到着時間間隔(指値注文時間間隔)
@@ -80,7 +81,7 @@ public class arrival_frequency {
 		}
 	}
 
-	private static void filewriter(List<Integer> list, String dirpath, String filedate, boolean morning ) throws IOException {
+	private static void filewriter(List list, String dirpath, String filedate, boolean morning ) throws IOException {
 		int n = list.size();
 		String ampm = "\\morning\\";
 		if (!morning) {
@@ -112,7 +113,7 @@ public class arrival_frequency {
 		File[] filelist = rfiledir.listFiles(); // 読み込むファイル名を取得する．
 
 		String[] subpaths = { "\\yearly" + datayear, "\\initial_depth" + datayear + "\\after_up",
-				"\\initial_depth" + datayear + "\\after_down" };
+				"\\initial_depth" + datayear + "\\after_down", "\\move_frequency" + datayear };
 		PrintWriter pw[] = new PrintWriter[subpaths.length];
 		for (int q = 0; q < subpaths.length; q++) {
 			File file = new File(currentdir + writedir + subpaths[q] + "_.csv");
@@ -128,6 +129,7 @@ public class arrival_frequency {
 				+ "Upmovement Times Of the Best Ask,Downmovement Times Of the Best Ask,");
 		pw[1].println("date,time,Quote/Trade,,,bid price,bid depth,ask price,ask depth,na,na");
 		pw[2].println("date,time,Quote/Trade,,,bid price,bid depth,ask price,ask depth,na,na");
+		pw[3].println("date,time interval per second,");
 
 		serial_correlation sc = new serial_correlation(); // serial_correlationクラスのインスタンス，時間感覚の計算に使う．
 
@@ -154,6 +156,9 @@ public class arrival_frequency {
 			List<Integer> down_times_bid       = new ArrayList<Integer>(); // downmovement times of the best bid
 			List<Integer> up_times_ask         = new ArrayList<Integer>(); // upmovement times of the best ask
 			List<Integer> down_times_ask       = new ArrayList<Integer>(); // downmovement times of the best ask
+			List<String> initial_depth_up      = new ArrayList<String>(); // initial depth after up
+			List<String> initial_depth_down    = new ArrayList<String>(); // initial depth after down
+			List<Integer> move_frequency       = new ArrayList<Integer>(); // time interval of fluctuations
 			List<Integer> interval_limit_buy   = new ArrayList<Integer>(); // time interval of the limit buy order
 			List<Integer> interval_limit_sell  = new ArrayList<Integer>(); // time interval of the limit sell order
 			List<Integer> interval_market_buy  = new ArrayList<Integer>(); // time interval of the market buy order
@@ -172,6 +177,7 @@ public class arrival_frequency {
 			int tradevolume = 0; // 約定数量
 			String time = ""; // 時刻
 			int inttime = 0; // 時間間隔計算用
+			int move_freq_time_temp = 0; // 板の変動の時間間隔計算用
 			int limit_buy_time_temp = 0; // 買い指値注文時間間隔計算用
 			int limit_sell_time_temp = 0; // 売り指値注文時間間隔計算用
 			int market_buy_time_temp = 0; // 買い成行注文時間間隔計算用
@@ -194,6 +200,8 @@ public class arrival_frequency {
 			boolean continuous = false; // ザラバを判定する．場中はtrue.
 			boolean isInit = true; // 最良気配に初期値を入れるための判定記号．
 			boolean isMorning = true;
+			boolean bid_up_move = false; // 上下板が同時に動くかを判定する．
+			boolean bid_down_move = false; // 上下板が同時に動くかを判定する．
 			boolean market_buy_order = false; // 買いの成行注文が来たらtrue.
 			boolean market_sell_order = false; // 売りの成行注文が来たらtrue.
 
@@ -216,6 +224,7 @@ public class arrival_frequency {
 							"," + variance(pieces_limit_buy) + "," + variance(pieces_limit_sell) +
 							"," + getlast(up_times_bid) + "," + getlast(down_times_bid) +
 							"," + getlast(up_times_ask) + "," + getlast(down_times_ask));
+					pw[3].println(rfiledate + "," + mean(move_frequency));
 
 					filewriter(pieces_limit_buy, currentdir + writedir + "\\pieces\\pieces_limit_buy" + datayear,
 							rfiledate, isMorning );
@@ -235,6 +244,8 @@ public class arrival_frequency {
 							rfiledate, isMorning );
 					filewriter(operating_time_bid, currentdir + writedir + "\\operating_time\\bid" + datayear, rfiledate, isMorning);
 					filewriter(operating_time_ask, currentdir + writedir + "\\operating_time\\ask" + datayear, rfiledate, isMorning);
+					filewriter(initial_depth_up, currentdir + writedir + "\\initial_depth" + datayear + "\\after_up", rfiledate, isMorning);
+					filewriter(initial_depth_down, currentdir + writedir + "\\initial_depth" + datayear + "\\after_down", rfiledate, isMorning);
 
 					// initialize (morning, afternoon session に分かれている日のため)
 					freq_market_buy    = new ArrayList<Integer>();
@@ -249,6 +260,9 @@ public class arrival_frequency {
 					down_times_bid     = new ArrayList<Integer>();
 					up_times_ask       = new ArrayList<Integer>();
 					down_times_ask     = new ArrayList<Integer>();
+					initial_depth_up   = new ArrayList<String>();
+					initial_depth_down = new ArrayList<String>();
+					move_frequency     = new ArrayList<Integer>();
 					interval_limit_buy   = new ArrayList<Integer>();
 					interval_limit_sell  = new ArrayList<Integer>();
 					interval_market_buy  = new ArrayList<Integer>();
@@ -257,6 +271,8 @@ public class arrival_frequency {
 					operating_time_ask   = new ArrayList<Integer>();
 					continuous = false;
 					isInit = true;
+					bid_up_move = false;
+					bid_down_move = false;
 					market_buy_order = false;
 					market_sell_order = false;
 				}
@@ -274,6 +290,7 @@ public class arrival_frequency {
 						biddepthtemp = Integer.parseInt(line.split(",", -1)[6]);
 						askpricetemp = Integer.parseInt(line.split(",", -1)[7]);
 						askdepthtemp = Integer.parseInt(line.split(",", -1)[8]);
+						move_freq_time_temp = inttime;
 						limit_buy_time_temp = inttime;
 						limit_sell_time_temp = inttime;
 						market_buy_time_temp = inttime;
@@ -293,7 +310,7 @@ public class arrival_frequency {
 						askdepth = Integer.parseInt(line.split(",", -1)[8]);
 
 						if (bidprice > bidpricetemp) {
-							pw[1].println(line);
+							bid_up_move = true;
 							count(up_times_bid);
 							operating_time_bid_temp = inttime;
 						} else if (bidprice == bidpricetemp) {
@@ -323,6 +340,7 @@ public class arrival_frequency {
 								}
 							}
 						} else {
+							bid_down_move = true;
 							count(down_times_bid);
 							if (market_sell_order) {
 								/*
@@ -347,6 +365,13 @@ public class arrival_frequency {
 						}
 
 						if (askprice > askpricetemp) {
+							if (bid_up_move) {
+								timediff = sc.time_diff_in_seconds(move_freq_time_temp, inttime);
+								move_frequency.add(timediff);
+								move_freq_time_temp = inttime;
+								pw[1].println(line);
+								initial_depth_up.add(line);
+							}
 							count(up_times_ask);
 							if (market_buy_order) {
 								/*
@@ -394,7 +419,13 @@ public class arrival_frequency {
 								}
 							}
 						} else {
-							pw[2].println(line);
+							if (bid_down_move) {
+								timediff = sc.time_diff_in_seconds(move_freq_time_temp, inttime);
+								move_frequency.add(timediff);
+								move_freq_time_temp = inttime;
+								pw[2].println(line);
+								initial_depth_down.add(line);
+							}
 							count(down_times_ask);
 							operating_time_ask_temp = inttime;
 						}
@@ -403,6 +434,8 @@ public class arrival_frequency {
 						biddepthtemp = biddepth; // 最良買い気配数量を更新
 						askpricetemp = askprice; // 最良売り気配値を更新
 						askdepthtemp = askdepth; // 最良売り気配数量を更新
+						bid_up_move = false;
+						bid_down_move = false;
 						market_buy_order = false;
 						market_sell_order = false;
 					}
