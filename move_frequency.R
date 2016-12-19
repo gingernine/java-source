@@ -118,7 +118,7 @@ subdir <- "\\move_frequency"
 filepath <- paste(maindir, subdir, datayear, "_.csv", sep="", collapse=NULL)
 move_freq <- read.csv(filepath, header=T)
 move_freq <- cbind(move_freq, matrix(0, nrow=nrow(move_freq), ncol=2))
-integral_interval <- c(0, 100)
+integral_interval <- c(0, 1000)
 for (r in 1:nrow(parameters)) {
     meanvol <-  (parameters[r, "Averege.Pieces.of.One.Market.Buy.Order"] + parameters[r, "Averege.Pieces.of.One.limit.sell.Order"]) / 2
     r_U_A <- parameters[r, "r^U_A"] / meanvol
