@@ -1,5 +1,7 @@
 #モデルによる期待値と実際の値で，変動の頻度を比較する．
 
+library(SimpsonRule)
+
 factorial <- function(n) {
     if (n==0) {
         1
@@ -39,19 +41,19 @@ f_B_Exp <- function(t, r_B, l_B, m_B) {
 }
 
 f_U <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_A(t, r_A, l_A, m_A) - f_A(t, r_A, l_A, m_A) * integrate(f_B, 0, t, r_B, l_B, m_B)$value
+    f_A(t, r_A, l_A, m_A) * (1 - integrate(f_B, 1, t, r_B, l_B, m_B)$value)
 }
 
 f_D <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_B(t, r_B, l_B, m_B) - f_B(t, r_B, l_B, m_B) * integrate(f_A, 0, t, r_A, l_A, m_A)$value
+    f_B(t, r_B, l_B, m_B) * (1 - integrate(f_A, 1, t, r_A, l_A, m_A)$value)
 }
 
 f_U_Exp <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_A_Exp(t, r_A, l_A, m_A) * ( 1 - integrate(f_B, 0, t, r_B, l_B, m_B)$value )
+    f_A_Exp(t, r_A, l_A, m_A) * ( 1 - integrate(f_B, 1, t, r_B, l_B, m_B)$value )
 }
 
 f_D_Exp <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_B_Exp(t, r_B, l_B, m_B) * ( 1 - integrate(f_A, 0, t, r_A, l_A, m_A)$value )
+    f_B_Exp(t, r_B, l_B, m_B) * ( 1 - integrate(f_A, 1, t, r_A, l_A, m_A)$value )
 }
 
 maindir <- "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output\\statistics_of_the_limit_order_book"
@@ -87,6 +89,7 @@ for (ud in up_down) {
     for (d in 1:nrow(data["date"])) {
         for (session in sessions) {
             filepath <- paste(maindir, subdir, datayear, ud, session, "\\", data[d, "date"], "_.csv", sep="", collapse=NULL)
+            print(filepath)
             if (file.exists(filepath)) {
                 depth <- read.csv(filepath, sep=",", header=F)
                 depthmat[d, 1] <- mean(depth[, 7]) # best bid
@@ -153,7 +156,7 @@ interval <- function(func, r_A, l_A, m_A, r_B, l_B, m_B) {
     }
 }
 
-for (r in 1:nrow(parameters)) {
+for (r in 1:1){#nrow(parameters)) {
     meanvol <-  (parameters[r, "Averege.Pieces.of.One.Market.Buy.Order"] + parameters[r, "Averege.Pieces.of.One.limit.sell.Order"]) / 2
     r_U_A <- parameters[r, "r^U_A"] / meanvol
     r_D_A <- parameters[r, "r^D_A"] / meanvol
@@ -164,15 +167,41 @@ for (r in 1:nrow(parameters)) {
     l_B <- 1/60/3#parameters[r, "lambda_B"]
     m_A <- 1/60/4#parameters[r, "mu_A"]
     m_B <- 1/60/4#parameters[r, "mu_B"]
-    integral_interval[1] <- interval(f_U_Exp, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
-    integral_interval[2] <- interval(f_D_Exp, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
-    integral_interval[3] <- interval(f_U_Exp, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
-    integral_interval[4] <- interval(f_D_Exp, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
+    #integral_interval <- numeric(4)
+    #integral_interval[1] <- interval(f_U_Exp, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
+    #integral_interval[2] <- interval(f_D_Exp, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
+    #integral_interval[3] <- interval(f_U_Exp, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
+    #integral_interval[4] <- interval(f_D_Exp, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
     curve(f_U_Exp(x,  r_U_A, l_A, m_A, r_U_B, l_B, m_B), xlim=c(1, integral_interval[1]))
-    E_U <- integrate(f_U_Exp, 0, integral_interval[1], r_U_A, l_A, m_A, r_U_B, l_B, m_B)$value + integrate(f_D_Exp, 0, integral_interval[2], r_U_A, l_A, m_A, r_U_B, l_B, m_B)$value
-    E_D <- integrate(f_U_Exp, 0, integral_interval[3], r_D_A, l_A, m_A, r_D_B, l_B, m_B)$value + integrate(f_D_Exp, 0, integral_interval[4], r_D_A, l_A, m_A, r_D_B, l_B, m_B)$value
+    E_U <- integrate(f_U_Exp, 1, Inf, r_U_A, l_A, m_A, r_U_B, l_B, m_B)$value + integrate(f_D_Exp, 1, Inf, r_U_A, l_A, m_A, r_U_B, l_B, m_B)$value
+    E_D <- integrate(f_U_Exp, 1, Inf, r_D_A, l_A, m_A, r_D_B, l_B, m_B)$value + integrate(f_D_Exp, 1, Inf, r_D_A, l_A, m_A, r_D_B, l_B, m_B)$value
     move_freq[r, 3] <- 1 / move_freq[r, 2]
     move_freq[r, 4] <- 2 / (E_U + E_D)
     print(move_freq[r, 4])
 }
+
+
+for (r in 1:1){#nrow(parameters)) {
+    meanvol <-  (parameters[r, "Averege.Pieces.of.One.Market.Buy.Order"] + parameters[r, "Averege.Pieces.of.One.limit.sell.Order"]) / 2
+    r_U_A <- parameters[r, "r^U_A"] / meanvol
+    r_D_A <- parameters[r, "r^D_A"] / meanvol
+    meanvol <-  (parameters[r, "Averege.Pieces.of.One.Market.sell.Order"] + parameters[r, "Averege.Pieces.of.One.limit.Buy.Order"]) / 2
+    r_U_B <- parameters[r, "r^U_B"] / meanvol
+    r_D_B <- parameters[r, "r^D_B"] / meanvol
+    l_A <- 1/60/3#parameters[r, "lambda_A"]
+    l_B <- 1/60/3#parameters[r, "lambda_B"]
+    m_A <- 1/60/4#parameters[r, "mu_A"]
+    m_B <- 1/60/4#parameters[r, "mu_B"]
+    integral_interval <- numeric(4)
+    integral_interval[1] <- interval(f_U_Exp, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
+    integral_interval[2] <- interval(f_D_Exp, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
+    integral_interval[3] <- interval(f_U_Exp, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
+    integral_interval[4] <- interval(f_D_Exp, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
+    curve(f_U(x, r_U_A, l_A, m_A, r_U_B, l_B, m_B), xlim=c(1, 100000))
+    p_UU <- integrate(f_U, 1, 60000, r_U_A, l_A, m_A, r_U_B, l_B, m_B)$value
+    p_UD <- integrate(f_D, 1, 60000, r_U_A, l_A, m_A, r_U_B, l_B, m_B)$value
+    p_DU <- integrate(f_U, 1, 60000, r_D_A, l_A, m_A, r_D_B, l_B, m_B)$value
+    p_DD <- integrate(f_D, 1, 60000, r_D_A, l_A, m_A, r_D_B, l_B, m_B)$value
+}
+
 
