@@ -14,12 +14,12 @@ gammaparam <- function(X) {
         }
         return(sum)
     }
-    slogx <- mean(log(X))
-    logsx <- log(mean(X))
+    mlogx <- mean(log(X))
+    logmx <- log(mean(X))
     
     #ニュートン法による再帰計算.
     iter <- function(a) {
-        slogx - logsx + log(a) - digamma(a)
+        mlogx - logmx + log(a) - digamma(a)
     }
     a <- exp(-1)
     while(T) {
