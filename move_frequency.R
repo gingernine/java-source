@@ -181,7 +181,7 @@ for (r in 1:1){#nrow(parameters)) {
 }
 
 
-for (r in 1:1){#nrow(parameters)) {
+for (r in 1:nrow(parameters)) {
     meanvol <-  (parameters[r, "Averege.Pieces.of.One.Market.Buy.Order"] + parameters[r, "Averege.Pieces.of.One.limit.sell.Order"]) / 2
     r_U_A <- parameters[r, "r^U_A"] / meanvol
     r_D_A <- parameters[r, "r^D_A"] / meanvol
