@@ -158,6 +158,10 @@ public class arrival_frequency {
 			List<Integer> down_times_ask       = new ArrayList<Integer>(); // downmovement times of the best ask
 			List<String> initial_depth_up      = new ArrayList<String>(); // initial depth after up
 			List<String> initial_depth_down    = new ArrayList<String>(); // initial depth after down
+			List<String> limit_buy_line        = new ArrayList<String>(); // series of arrival of limit buy
+			List<String> limit_sell_line       = new ArrayList<String>(); // series of arrival of limit sell
+			List<String> market_buy_line        = new ArrayList<String>(); // series of arrival of market buy
+			List<String> market_sell_line       = new ArrayList<String>(); // series of arrival of market sell
 			List<Integer> move_frequency       = new ArrayList<Integer>(); // time interval of fluctuations
 			List<Integer> interval_limit_buy   = new ArrayList<Integer>(); // time interval of the limit buy order
 			List<Integer> interval_limit_sell  = new ArrayList<Integer>(); // time interval of the limit sell order
@@ -177,6 +181,8 @@ public class arrival_frequency {
 			int tradevolume = 0; // 約定数量
 			String time = ""; // 時刻
 			int inttime = 0; // 時間間隔計算用
+			int closingtime = 0; // 引け時間
+			int continuoustime = 0; // ザラバ時間 = finishtime - openingtime
 			int move_freq_time_temp = 0; // 板の変動の時間間隔計算用
 			int limit_buy_time_temp = 0; // 買い指値注文時間間隔計算用
 			int limit_sell_time_temp = 0; // 売り指値注文時間間隔計算用
@@ -204,15 +210,32 @@ public class arrival_frequency {
 			boolean bid_down_move = false; // 上下板が同時に動くかを判定する．
 			boolean market_buy_order = false; // 買いの成行注文が来たらtrue.
 			boolean market_sell_order = false; // 売りの成行注文が来たらtrue.
+			int t = 0;
 
 			while ((line = brtxt.readLine()) != null) {
 
 				time = line.split(",", -1)[1].split(":")[0] + line.split(",", -1)[1].split(":")[1];
+
+				try {
+					inttime = Integer.parseInt(time + line.split(",", -1)[1].split(":")[2]);
+				} catch (Exception e) {
+					inttime = Integer.parseInt(time + "00");
+				}
+
 				if (line.split(",", -1)[9].equals("  1")) {
+					try {
+						closingtime = Integer.parseInt(closing[t].split(",", -1)[1].split(":")[0]
+								+ closing[t].split(",", -1)[1].split(":")[1]
+								+ closing[t].split(",", -1)[1].split(":")[2]);
+					} catch (Exception e) {
+						closingtime = Integer.parseInt(closing[t].split(",", -1)[1].split(":")[0]
+								+ closing[t].split(",", -1)[1].split(":")[1] + "00");
+					}
+					continuoustime = sc.time_diff_in_seconds(inttime, closingtime);
 					continuous = true;
 				}
 				if (Arrays.asList(closing).contains(line)) {
-
+					t = 1;
 					if (inttime > 120000) {
 						isMorning = false;
 					}
@@ -246,6 +269,10 @@ public class arrival_frequency {
 					filewriter(operating_time_ask, currentdir + writedir + "\\operating_time\\ask" + datayear, rfiledate, isMorning);
 					filewriter(initial_depth_up, currentdir + writedir + "\\initial_depth" + datayear + "\\after_up", rfiledate, isMorning);
 					filewriter(initial_depth_down, currentdir + writedir + "\\initial_depth" + datayear + "\\after_down", rfiledate, isMorning);
+					filewriter(limit_buy_line, currentdir + writedir + "\\arrival_time_series" + datayear + "\\limit_buy", rfiledate, isMorning);
+					filewriter(limit_sell_line, currentdir + writedir + "\\arrival_time_series" + datayear + "\\limit_sell", rfiledate, isMorning);
+					filewriter(market_buy_line, currentdir + writedir + "\\arrival_time_series" + datayear + "\\market_buy", rfiledate, isMorning);
+					filewriter(market_sell_line, currentdir + writedir + "\\arrival_time_series" + datayear + "\\market_sell", rfiledate, isMorning);
 
 					// initialize (morning, afternoon session に分かれている日のため)
 					freq_market_buy    = new ArrayList<Integer>();
@@ -262,6 +289,10 @@ public class arrival_frequency {
 					down_times_ask     = new ArrayList<Integer>();
 					initial_depth_up   = new ArrayList<String>();
 					initial_depth_down = new ArrayList<String>();
+					limit_buy_line     = new ArrayList<String>();
+					limit_sell_line     = new ArrayList<String>();
+					market_buy_line     = new ArrayList<String>();
+					market_sell_line    = new ArrayList<String>();
 					move_frequency     = new ArrayList<Integer>();
 					interval_limit_buy   = new ArrayList<Integer>();
 					interval_limit_sell  = new ArrayList<Integer>();
@@ -277,12 +308,6 @@ public class arrival_frequency {
 					market_sell_order = false;
 				}
 
-				try {
-					inttime = Integer.parseInt(time + line.split(",", -1)[1].split(":")[2]);
-				} catch (Exception e) {
-					inttime = Integer.parseInt(time + "00");
-				}
-
 				if (continuous && isInit) {
 					// 最良気配に初期値を入れる．
 					if (line.split(",", -1)[2].equals("Quote")) {
@@ -290,6 +315,10 @@ public class arrival_frequency {
 						biddepthtemp = Integer.parseInt(line.split(",", -1)[6]);
 						askpricetemp = Integer.parseInt(line.split(",", -1)[7]);
 						askdepthtemp = Integer.parseInt(line.split(",", -1)[8]);
+						limit_buy_line.add(time+line.split(",", -1)[1].split(":")[2] + "," + bidpricetemp + "," + biddepthtemp + "," + continuoustime);
+						limit_sell_line.add(time+line.split(",", -1)[1].split(":")[2] + "," + askpricetemp + "," + askdepthtemp + "," + continuoustime);
+						market_buy_line.add(time+line.split(",", -1)[1].split(":")[2] + "," + askpricetemp + "," + askdepthtemp + "," + continuoustime);
+						market_sell_line.add(time+line.split(",", -1)[1].split(":")[2] + "," + bidpricetemp + "," + biddepthtemp + "," + continuoustime);
 						move_freq_time_temp = inttime;
 						limit_buy_time_temp = inttime;
 						limit_sell_time_temp = inttime;
@@ -321,6 +350,7 @@ public class arrival_frequency {
 								 * (2)買いの指値注文として数える．
 								 * (3)増加分は指値注文数として記録する．
 								 */
+								limit_buy_line.add(time+line.split(",", -1)[1].split(":")[2] + "," + line.split(",", -1)[5] + "," + (biddepth - biddepthtemp) + "," + continuoustime);
 								timediff = sc.time_diff_in_seconds(limit_buy_time_temp, inttime);
 								interval_limit_buy.add(timediff);
 								limit_buy_time_temp = inttime;
@@ -401,6 +431,7 @@ public class arrival_frequency {
 								 * (2)売りの指値注文として数える．
 								 * (3)増加分は指値注文数として記録する．
 								 */
+								limit_sell_line.add(time+line.split(",", -1)[1].split(":")[2] + "," + line.split(",", -1)[7] + "," + (askdepth - askdepthtemp) + "," + continuoustime);
 								timediff = sc.time_diff_in_seconds(limit_sell_time_temp, inttime);
 								interval_limit_sell.add(timediff);
 								limit_sell_time_temp = inttime;
@@ -449,6 +480,7 @@ public class arrival_frequency {
 							 * 約定価格が直前のbest ask に等しいなら，
 							 * (1)買いの成行注文として数える．
 							 */
+							market_buy_line.add(time+line.split(",", -1)[1].split(":")[2] + "," + line.split(",", -1)[7] + "," + tradevolume + "," + continuoustime);
 							count(freq_market_buy);
 							market_buy_order = true;
 						} else if (tradeprice == bidprice) {
@@ -456,6 +488,7 @@ public class arrival_frequency {
 							 *  約定価格が直前のbest bid に等しいなら，
 							 * (1)売りの成行注文として数える．
 							 */
+							market_sell_line.add(time+line.split(",", -1)[1].split(":")[2] + "," + line.split(",", -1)[5] + "," + tradevolume + "," + continuoustime);
 							count(freq_market_sell);
 							market_sell_order = true;
 						}

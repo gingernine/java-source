@@ -11,15 +11,19 @@ factorial <- function(n) {
 }
 
 bessel <- function(x, n) {
-    sum <- 0
-    for (i in 0:1000) {
-        t <- 1
-        if (i >= 1) {
-            for (j in 1:i) {
-                t <- t * (x*x/4) / (j*(n+j))
-            }
+    sum <- 1
+    diff <- 1
+    i <- 1
+    while (diff >= 1e-08) {
+        diff <- 1
+        for (j in 1:i) {
+            diff <- diff * (x*x/4) / (j*(n+j))
         }
-        sum <- sum + t / factorial(n)
+        sum <- sum + diff
+        i <- i+1
+    }
+    for (j in 0:n-1) {
+        sum <- sum / (n-j)
     }
     return((x/2)^n * sum)
 }
@@ -41,11 +45,11 @@ f_B_Exp <- function(t, r_B, l_B, m_B) {
 }
 
 f_U <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_A(t, r_A, l_A, m_A) * (1 - integrate(f_B, 1, t, r_B, l_B, m_B)$value)
+    f_A(t, r_A, l_A, m_A) * (1 - integrate(f_B, 0, t, r_B, l_B, m_B)$value)
 }
 
 f_D <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_B(t, r_B, l_B, m_B) * (1 - integrate(f_A, 1, t, r_A, l_A, m_A)$value)
+    f_B(t, r_B, l_B, m_B) * (1 - integrate(f_A, 0, t, r_A, l_A, m_A)$value)
 }
 
 f_U_Exp <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
