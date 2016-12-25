@@ -1,72 +1,82 @@
-#注文時間間隔及のtexcodeテーブルを作成する．
+#到着率を時間毎に区切り計算，更には適合度検定する．
 
 maindir <- "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output"
-currentdir <- "\\statistics_of_the_limit_order_book\\time_interval\\"
+subdir <- "\\statistics_of_the_limit_order_book\\arrival_time_series"
 datayear <- "\\2007"
-branchs <- c( "time_interval_limit_buy", "time_interval_limit_sell", "time_interval_market_buy", "time_interval_market_sell" )
+branchs <- c( "\\limit_buy", "\\limit_sell", "\\market_buy", "\\market_sell" ) 
 sessions <- c( "\\morning", "\\afternoon" )
 
-table <- matrix(0, nrow=1, ncol=1)
-i <- 1
+convert_to_seconds <- function(time) {
+    # "hhmmss" (時分秒)表示される時間を始点0時0分0秒からの秒で表示する． #
+    h <- (time - time %% 10000) * 3600 / 10000
+    m <- (time %% 10000 - time %% 100) * 60 / 100
+    s <- time %% 100
+    return(h + m + s)
+}
+
+calc_arrival_rate <- function(time_vector, interval) {
+    # interval 分間隔での到着率を計算する． #
+    size <- length(time_vector)
+    stamp <- convert_to_seconds(time_vector[1]) # time stamp for while loop
+    finish <- convert_to_seconds(time_vector[size]) # closing time
+    interval <- interval * 60 # time interval in seconds
+    p1 <- 2
+    p2 <- 1
+    retvec <- numeric(ceiling((finish-stamp)/interval))
+    while(stamp <= finish) {
+        counter <- 0
+        while (convert_to_seconds(time_vector[p1]) <= stamp + interval) {
+            counter <- counter + 1
+            p1 <- p1 + 1
+            if (p1 > size) break
+        }
+        retvec[p2] <- counter / interval
+        p2 <- p2 + 1
+        stamp <- stamp + interval
+    }
+    return(retvec)
+}
+
+time_interval <- function(time_vector, continuous_time) {
+    # 時間間隔の系列を作成する． #
+    size <- length(time_vector) - 1
+    series <- numeric(size)
+    for (i in 1:size) {
+        series[i] <- convert_to_seconds(time_vector[i+1]) - convert_to_seconds(time_vector[i])
+    }
+    return(list(series=series, lambda=size / continuous_time))
+}
+
+logarithm_plot <- function(interval_series, lambda) {
+    # 時間間隔の系列を受取り，対数変換された累積頻度図を描く． #
+    MAX <- max(interval_series)
+    freq <- numeric(MAX + 1) #時間間隔は0~1秒 1~2秒 ... MAX~MAX+1秒
+    for (i in interval_series) {
+        freq[i+1] <- freq[i+1] + 1
+    }
+    freq <- freq / sum(freq) #頻度の和を1にする．
+    size <- length(freq)
+    logcum <- numeric(size)
+    for (i in 1:size) {
+        logcum[i] <- log(sum(freq[i:size]))
+    }
+    plot(logcum, type="S")
+    abline(0, -lambda)
+}
+
+# main function
 for (branch in branchs) {
-    Mean <- c(0)
     for (session in sessions) {
-        rfilepath <- paste(maindir, currentdir, branch, datayear, "\\statistics_summary", session, ".csv", sep="", collapse=NULL)
-        data <- read.csv(rfilepath, sep=",", header=T)
-        Mean <- c(Mean, data[,"Mean"])
-    }
-    Mean <- Mean[-1]
-    if (i == 1) {
-        table <- matrix(0, nrow=length(Mean), ncol=6)
-        colnames(table) <- c("lambda_B", "lambda_A", "mu_A", "mu_B", "rho_B", "rho_A")
-    }
-    table[,i] <- Mean
-    i <- i+1
-}
-
-print(table)
-for (r in seq(nrow(table))) {
-    for (c in 1:4) {
-        table[r,c] <- 1/table[r,c]
-    }
-    table[r,5] <- table[r,1]/table[r,4]
-    table[r,6] <- table[r,2]/table[r,3]
-}
-
-summary <- matrix(0, ncol=6, nrow=2)
-rownames(summary) <- c("Mean", "S.D.")
-colnames(summary) <- c("lambda_B","lambda_A","mu_A","mu_B", "rho_B", "rho_A")
-for (rname in colnames(summary)) {
-    summary["Mean", rname] <- mean(table[,rname])
-    summary["S.D.", rname] <- sd(table[,rname])
-}
-
-
-#tex code
-code <- ""
-for (cname in colnames(summary)) {
-    code <- paste(code, " & ", "\\", cname, sep="", collapse=NULL)
-}
-code <- paste(code, " \\ \\hline", sep="", collapse=NULL)
-code <- matrix(code, ncol=1, nrow=1)
-
-for (rname in rownames(summary)) {
-    line <- paste("{\\", "rm ", rname, "} & ", sep="", collapse=NULL)
-    for (c in seq(ncol(summary))) {
-        if (c == ncol(summary)) {
-            line <- paste(line, "$", summary[rname, c], "$", " \\ \\hline", sep="", collapse=NULL)
-        } else {
-            line <- paste(line, "$", summary[rname, c], "$", " & ", sep="", collapse=NULL)
+        dirpath <- paste(maindir, subdir, datayear, branch, session, sep="", collapse=NULL)
+        par(new=F)
+        for (name in list.files(dirpath)) {
+            filepath <- paste(dirpath, "\\", name, sep="", collapse=NULL)
+            data <- read.csv(filepath, sep=",", header=F)
+            #int10 <- calc_arrival_rate(data[,1], 10)
+            #plot(int10, type="s", main="", #paste(branch, session, "\\", name, sep="", collapse=NULL), ylim=c(0, 2.0), xlim=c(0, 16))
+            #par(new=T)
+            ret <- time_interval(data[,1], data[1,4])
+            logcum <- logarithm_plot(ret$series, ret$lambda)
         }
     }
-    code <- rbind(code, matrix(line, nrow=1, ncol=1))
 }
-
-wfiledir <- paste(maindir, currentdir, "\\summary", sep="", collapse=NULL)
-if (!file.exists(wfiledir)) {
-    dir.create(wfiledir)
-}
-
-wfilepath <- paste(maindir, currentdir, "\\summary", datayear, "_texcode.csv", sep="", collapse=NULL)
-write.csv(code, wfilepath, quote = F, row.names = T)
-
