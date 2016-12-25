@@ -37,6 +37,35 @@ calc_arrival_rate <- function(time_vector, interval) {
     return(retvec)
 }
 
+unit_pieces_arrival <- function(unit, time_pieces) {
+    # unit で規定される単位枚数ごとの到着時間の系列を作成する． #
+    firstrow <- time_pieces[1,]
+    time_pieces <- time_pieces[-1,]
+    unit_pieces_series <- matrix(0, ncol=2, nrow=1)
+    pieces <- 0
+    for (i in 1:nrow(time_pieces)) {
+        cur <- time_pieces[i, 2]
+        if (cur < unit - pieces) {
+            pieces <- pieces + cur
+            next
+        } else {
+            cur <- cur - unit + pieces
+            unit_pieces_series <- rbind(unit_pieces_series, matrix(c(time_pieces[i, 1], unit), ncol=2, nrow=1))
+            pieces <- 0
+        }
+        q <- floor(cur / unit)
+        pieces <- cur %% unit
+        while (q > 0) {
+            unit_pieces_series <- rbind(unit_pieces_series, matrix(c(time_pieces[i, 1], unit), ncol=2, nrow=1))
+            q <- q-1
+        }
+    }
+    unit_pieces_series[1,] <- matrix(firstrow, ncol=2, nrow=1)
+    return(unit_pieces_series)
+}
+
+unit_pieces_arrival(10, tp)
+
 time_interval <- function(time_vector, continuous_time) {
     # 時間間隔の系列を作成する． #
     size <- length(time_vector) - 1
@@ -47,7 +76,7 @@ time_interval <- function(time_vector, continuous_time) {
     return(list(series=series, lambda=size / continuous_time))
 }
 
-logarithm_plot <- function(interval_series, lambda) {
+logarithm_plot <- function(interval_series, lambda, picname) {
     # 時間間隔の系列を受取り，対数変換された累積頻度図を描く． #
     MAX <- max(interval_series)
     freq <- numeric(MAX + 1) #時間間隔は0~1秒 1~2秒 ... MAX~MAX+1秒
@@ -60,7 +89,7 @@ logarithm_plot <- function(interval_series, lambda) {
     for (i in 1:size) {
         logcum[i] <- log(sum(freq[i:size]))
     }
-    plot(logcum, type="S")
+    plot(logcum, type="S", main=picname)
     abline(0, -lambda)
 }
 
@@ -68,7 +97,7 @@ logarithm_plot <- function(interval_series, lambda) {
 for (branch in branchs) {
     for (session in sessions) {
         dirpath <- paste(maindir, subdir, datayear, branch, session, sep="", collapse=NULL)
-        par(new=F)
+        #par(new=F)
         for (name in list.files(dirpath)) {
             filepath <- paste(dirpath, "\\", name, sep="", collapse=NULL)
             data <- read.csv(filepath, sep=",", header=F)
@@ -76,7 +105,7 @@ for (branch in branchs) {
             #plot(int10, type="s", main="", #paste(branch, session, "\\", name, sep="", collapse=NULL), ylim=c(0, 2.0), xlim=c(0, 16))
             #par(new=T)
             ret <- time_interval(data[,1], data[1,4])
-            logcum <- logarithm_plot(ret$series, ret$lambda)
+            logarithm_plot(ret$series, ret$lambda, paste(branch, session, "\\", name, sep="", collapse=NULL))
         }
     }
 }
