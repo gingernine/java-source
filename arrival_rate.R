@@ -64,8 +64,6 @@ unit_pieces_arrival <- function(unit, time_pieces) {
     return(unit_pieces_series)
 }
 
-unit_pieces_arrival(10, tp)
-
 time_interval <- function(time_vector, continuous_time) {
     # 時間間隔の系列を作成する． #
     size <- length(time_vector) - 1
@@ -93,7 +91,7 @@ logarithm_plot <- function(interval_series, lambda, picname) {
     abline(0, -lambda)
 }
 
-# main function
+# main loop
 for (branch in branchs) {
     for (session in sessions) {
         dirpath <- paste(maindir, subdir, datayear, branch, session, sep="", collapse=NULL)
@@ -104,7 +102,8 @@ for (branch in branchs) {
             #int10 <- calc_arrival_rate(data[,1], 10)
             #plot(int10, type="s", main="", #paste(branch, session, "\\", name, sep="", collapse=NULL), ylim=c(0, 2.0), xlim=c(0, 16))
             #par(new=T)
-            ret <- time_interval(data[,1], data[1,4])
+            unit_pieces <- unit_pieces_arrival(10, cbind(data[,1], data[,3]))
+            ret <- time_interval(unit_pieces[,1], data[1,4])
             logarithm_plot(ret$series, ret$lambda, paste(branch, session, "\\", name, sep="", collapse=NULL))
         }
     }
