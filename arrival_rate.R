@@ -6,6 +6,15 @@ datayear <- "\\2007"
 branchs <- c( "\\limit_buy", "\\limit_sell", "\\market_buy", "\\market_sell" ) 
 sessions <- c( "\\morning", "\\afternoon" )
 
+readcsv <- function(filepath, ...) {
+    error <- try(read.csv(filepath, ...))
+    if (class(error)=="try-error"){
+        return(-1)
+    }
+    data <- read.csv(filepath, ...)
+    return(data)
+}
+
 convert_to_seconds <- function(time) {
     # "hhmmss" (時分秒)表示される時間を始点0時0分0秒からの秒で表示する． #
     h <- (time - time %% 10000) * 3600 / 10000
@@ -71,7 +80,7 @@ time_interval <- function(time_vector, continuous_time) {
     for (i in 1:size) {
         series[i] <- convert_to_seconds(time_vector[i+1]) - convert_to_seconds(time_vector[i])
     }
-    return(list(series=series, lambda=size / continuous_time))
+    return(list(series = series, lambda = size/continuous_time))
 }
 
 logarithm_plot <- function(interval_series, lambda, picname) {
@@ -91,6 +100,38 @@ logarithm_plot <- function(interval_series, lambda, picname) {
     abline(0, -lambda)
 }
 
+chi_square_test <- function() {
+    # 時間間隔のΧ^2 適合度検定 #
+    
+}
+
+system_renewed <- function() {
+    # 板の変動毎に時間計測始点を更新したときの時系列を取得． #
+    b <- c( "\\time_interval_limit_buy", "\\time_interval_limit_sell", "\\time_interval_market_buy", "\\time_interval_market_sell" )
+    for (branch in b) {
+        for (session in sessions) {
+            dirpath <- paste(maindir, 
+                             "\\statistics_of_the_limit_order_book\\time_interval", 
+                             branch, datayear, session, sep="", collapse=NULL)
+            for (name in list.files(dirpath)) {
+                filepath <- paste(dirpath, "\\", name, sep="", collapse=NULL)
+                data <- readcsv(filepath, sep=",", header=F)
+                if(data == -1) {
+                    next
+                }
+                if (session == "\\morning") {
+                    denom <- 7800
+                } else {
+                    denom <- 9600
+                }
+                logarithm_plot(data[,1], nrow(data)/denom, paste(branch, session, "\\", name, sep="", collapse=NULL))
+            }
+        }
+    }
+}
+
+system_renewed()
+
 # main loop
 for (branch in branchs) {
     for (session in sessions) {
@@ -98,7 +139,7 @@ for (branch in branchs) {
         #par(new=F)
         for (name in list.files(dirpath)) {
             filepath <- paste(dirpath, "\\", name, sep="", collapse=NULL)
-            data <- read.csv(filepath, sep=",", header=F)
+            data <- readcsv(filepath, sep=",", header=F)
             #int10 <- calc_arrival_rate(data[,1], 10)
             #plot(int10, type="s", main="", #paste(branch, session, "\\", name, sep="", collapse=NULL), ylim=c(0, 2.0), xlim=c(0, 16))
             #par(new=T)

@@ -342,6 +342,8 @@ public class arrival_frequency {
 							bid_up_move = true;
 							count(up_times_bid);
 							operating_time_bid_temp = inttime;
+							limit_buy_time_temp = inttime;
+							market_sell_time_temp = inttime;
 						} else if (bidprice == bidpricetemp) {
 							if (biddepth > biddepthtemp) {
 								/*
@@ -459,6 +461,8 @@ public class arrival_frequency {
 							}
 							count(down_times_ask);
 							operating_time_ask_temp = inttime;
+							limit_sell_time_temp = inttime;
+							market_buy_time_temp = inttime;
 						}
 
 						bidpricetemp = bidprice; // 最良買い気配値を更新
