@@ -53,11 +53,11 @@ f_D <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
 }
 
 f_U_Exp <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_A_Exp(t, r_A, l_A, m_A) * ( 1 - integrate(f_B, 1, t, r_B, l_B, m_B)$value )
+    f_A_Exp(t, r_A, l_A, m_A) * ( 1 - integrate(f_B, 0, t, r_B, l_B, m_B)$value )
 }
 
 f_D_Exp <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_B_Exp(t, r_B, l_B, m_B) * ( 1 - integrate(f_A, 1, t, r_A, l_A, m_A)$value )
+    f_B_Exp(t, r_B, l_B, m_B) * ( 1 - integrate(f_A, 0, t, r_A, l_A, m_A)$value )
 }
 
 maindir <- "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output\\statistics_of_the_limit_order_book"
@@ -93,7 +93,7 @@ for (ud in up_down) {
     for (d in 1:nrow(data["date"])) {
         for (session in sessions) {
             filepath <- paste(maindir, subdir, datayear, ud, session, "\\", data[d, "date"], "_.csv", sep="", collapse=NULL)
-            print(filepath)
+            
             if (file.exists(filepath)) {
                 depth <- read.csv(filepath, sep=",", header=F)
                 depthmat[d, 1] <- mean(depth[, 7]) # best bid
@@ -111,36 +111,9 @@ for (ud in up_down) {
 }
 
 #到着率を取得する．
-subdir <- "\\time_interval"
-dirlist <- c( "\\time_interval_limit_buy", "\\time_interval_limit_sell", "\\time_interval_market_buy", "\\time_interval_market_sell" )
-ratemat <- matrix(0, ncol=4, nrow=nrow(parameters))
-colnames(ratemat) <- dirlist
-for (dir in dirlist){
-    filepath <- paste(maindir, subdir, dir, datayear, "\\statistics_summary\\morning", ".csv", sep="", collapse=NULL)
-    rate1 <- read.csv(filepath, sep=",", header=T)
-    filepath <- paste(maindir, subdir, dir, datayear, "\\statistics_summary\\afternoon", ".csv", sep="", collapse=NULL)
-    rate2 <- read.csv(filepath, sep=",", header=T)
-    r1 <- 1
-    r2 <- 1
-    boolean <- T
-    for (r in 1:nrow(ratemat)) {
-        if (r == 1) {
-            ratemat[r, dir] <- 1/(rate1[r1, "Mean"] + 0.5)
-            r1 <- r1 + 1
-            next
-        }
-        if (boolean) {
-            ratemat[r, dir] <- 1/(rate1[r1, "Mean"] + 0.5)
-            r1 <- r1 + 1
-            boolean <- F
-        } else {
-            ratemat[r, dir] <- 1/(rate2[r2, "Mean"] + 0.5)
-            r2 <- r2 + 1
-            boolean <- T
-        }
-    }
-}
-colnames(ratemat) <- c( "lambda_B", "lambda_A", "mu_A", "mu_B" )
+subdir <- "\\arrival_time_series"
+filepath <- paste(maindir, subdir, datayear, "\\arrival_rate_per_30pieces.csv", sep="", collapse=NULL)
+ratemat <- read.csv(filepath, header=T)
 parameters <- cbind(parameters, ratemat)
 
 subdir <- "\\move_frequency"
@@ -148,64 +121,52 @@ filepath <- paste(maindir, subdir, datayear, "_.csv", sep="", collapse=NULL)
 move_freq <- read.csv(filepath, header=T)
 move_freq <- cbind(move_freq, matrix(0, nrow=nrow(move_freq), ncol=2))
 
-interval <- function(func, r_A, l_A, m_A, r_B, l_B, m_B) {
-    max_interval <- 100
-    while (T) {
-        integral_interval[1] <- max_interval
-        if (func(max_interval, r_A, l_A, m_A, r_B, l_B, m_B) < 1e-02) {
-            return(max_interval)
-            break
-        }
-        max_interval <- max_interval + 1
+integral <- function(f, lower, upper, ...) {
+    error <- ""
+    res <- 0
+    while (class(error)!="try-error"){
+        tmp <- res
+        error <- try(res <- integrate(f, lower, upper, ...)$value)
+        upper <- upper + 10
     }
+    return(tmp)
 }
 
-for (r in 1:1){#nrow(parameters)) {
-    meanvol <-  (parameters[r, "Averege.Pieces.of.One.Market.Buy.Order"] + parameters[r, "Averege.Pieces.of.One.limit.sell.Order"]) / 2
-    r_U_A <- parameters[r, "r^U_A"] / meanvol
-    r_D_A <- parameters[r, "r^D_A"] / meanvol
-    meanvol <-  (parameters[r, "Averege.Pieces.of.One.Market.sell.Order"] + parameters[r, "Averege.Pieces.of.One.limit.Buy.Order"]) / 2
-    r_U_B <- parameters[r, "r^U_B"] / meanvol
-    r_D_B <- parameters[r, "r^D_B"] / meanvol
-    l_A <- 1/60/3#parameters[r, "lambda_A"]
-    l_B <- 1/60/3#parameters[r, "lambda_B"]
-    m_A <- 1/60/4#parameters[r, "mu_A"]
-    m_B <- 1/60/4#parameters[r, "mu_B"]
-    #integral_interval <- numeric(4)
-    #integral_interval[1] <- interval(f_U_Exp, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
-    #integral_interval[2] <- interval(f_D_Exp, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
-    #integral_interval[3] <- interval(f_U_Exp, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
-    #integral_interval[4] <- interval(f_D_Exp, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
-    curve(f_U_Exp(x,  r_U_A, l_A, m_A, r_U_B, l_B, m_B), xlim=c(1, integral_interval[1]))
-    E_U <- integrate(f_U_Exp, 1, Inf, r_U_A, l_A, m_A, r_U_B, l_B, m_B)$value + integrate(f_D_Exp, 1, Inf, r_U_A, l_A, m_A, r_U_B, l_B, m_B)$value
-    E_D <- integrate(f_U_Exp, 1, Inf, r_D_A, l_A, m_A, r_D_B, l_B, m_B)$value + integrate(f_D_Exp, 1, Inf, r_D_A, l_A, m_A, r_D_B, l_B, m_B)$value
-    move_freq[r, 3] <- 1 / move_freq[r, 2]
-    move_freq[r, 4] <- 2 / (E_U + E_D)
-    print(move_freq[r, 4])
-}
-
-
+probmat <- matrix(0, nrow=nrow(parameters), ncol=4)
 for (r in 1:nrow(parameters)) {
-    meanvol <-  (parameters[r, "Averege.Pieces.of.One.Market.Buy.Order"] + parameters[r, "Averege.Pieces.of.One.limit.sell.Order"]) / 2
-    r_U_A <- parameters[r, "r^U_A"] / meanvol
-    r_D_A <- parameters[r, "r^D_A"] / meanvol
-    meanvol <-  (parameters[r, "Averege.Pieces.of.One.Market.sell.Order"] + parameters[r, "Averege.Pieces.of.One.limit.Buy.Order"]) / 2
-    r_U_B <- parameters[r, "r^U_B"] / meanvol
-    r_D_B <- parameters[r, "r^D_B"] / meanvol
-    l_A <- 1/60/3#parameters[r, "lambda_A"]
-    l_B <- 1/60/3#parameters[r, "lambda_B"]
-    m_A <- 1/60/4#parameters[r, "mu_A"]
-    m_B <- 1/60/4#parameters[r, "mu_B"]
-    integral_interval <- numeric(4)
-    integral_interval[1] <- interval(f_U_Exp, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
-    integral_interval[2] <- interval(f_D_Exp, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
-    integral_interval[3] <- interval(f_U_Exp, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
-    integral_interval[4] <- interval(f_D_Exp, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
-    curve(f_U(x, r_U_A, l_A, m_A, r_U_B, l_B, m_B), xlim=c(1, 100000))
-    p_UU <- integrate(f_U, 1, 60000, r_U_A, l_A, m_A, r_U_B, l_B, m_B)$value
-    p_UD <- integrate(f_D, 1, 60000, r_U_A, l_A, m_A, r_U_B, l_B, m_B)$value
-    p_DU <- integrate(f_U, 1, 60000, r_D_A, l_A, m_A, r_D_B, l_B, m_B)$value
-    p_DD <- integrate(f_D, 1, 60000, r_D_A, l_A, m_A, r_D_B, l_B, m_B)$value
+    r_U_A <- parameters[r, "r^U_A"] / 30
+    r_D_A <- parameters[r, "r^D_A"] / 30
+    r_U_B <- parameters[r, "r^U_B"] / 30
+    r_D_B <- parameters[r, "r^D_B"] / 30
+    l_A <- parameters[r, "lambda_A"]
+    l_B <- parameters[r, "lambda_B"]
+    m_A <- parameters[r, "mu_A"]
+    m_B <- parameters[r, "mu_B"]
+    p_UU <- integral(f_U, 0, 100, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
+    p_UD <- integral(f_D, 0, 100, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
+    p_DU <- integral(f_U, 0, 100, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
+    p_DD <- integral(f_D, 0, 100, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
+    probmat[r,] <- c(p_UU, p_UD, p_DU, p_DD)
 }
+colnames(probmat) <- c( "p_UU", "p_UD", "p_DU", "p_DD" )
+rownames(probmat) <- rownames(parameters)
 
+wfiledir <- paste(maindir, "\\transition_probability", datayear, sep="", collapse=NULL)
+if (!file.exists(wfiledir)) {
+    dir.create(wfiledir, recursive=T)
+}
+wfilepath <- paste(wfiledir, "\\arrival_rate_per_30pieces_Not_stochastic_initial_depth.csv", sep="", collapse=NULL)
+write.csv(probmat, wfilepath, quote=F)
 
+# transient_prob summary
+probmat <- read.csv(wfilepath, header=T)
+mean_UU <- mean(probmat[,2])
+sd_UU <- sd(probmat[,2])
+mean_UD <- mean(probmat[,3])
+sd_UD <- sd(probmat[,3])
+mean_DU <- mean(probmat[,4])
+sd_DU <- sd(probmat[,4])
+mean_DD <- mean(probmat[,5])
+sd_DD <- sd(probmat[,5])
+print(paste("{", mean_UU, "\\(", sd_UU, ")} & {", mean_UD, "\\(", sd_UD, ")}", sep="", collapse=NULL))
+print(paste("{", mean_DU, "\\(", sd_DU, ")} & {", mean_DD, "\\(", sd_DD, ")}", sep="", collapse=NULL))

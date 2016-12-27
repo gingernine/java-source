@@ -7,12 +7,12 @@ branchs <- c( "\\limit_buy", "\\limit_sell", "\\market_buy", "\\market_sell" )
 sessions <- c( "\\morning", "\\afternoon" )
 
 readcsv <- function(filepath, ...) {
-    error <- try(read.csv(filepath, ...))
+    error <- try(data <- read.csv(filepath, ...))
     if (class(error)=="try-error"){
         return(-1)
+    } else {
+        return(data)
     }
-    data <- read.csv(filepath, ...)
-    return(data)
 }
 
 convert_to_seconds <- function(time) {
@@ -45,9 +45,14 @@ calc_arrival_rate <- function(time_vector, interval) {
     }
     return(retvec)
 }
+#int10 <- calc_arrival_rate(data[,1], 10)
+#plot(int10, type="s", main="", #paste(branch, session, "\\", name, sep="", collapse=NULL), ylim=c(0, 2.0), xlim=c(0, 16))
 
 unit_pieces_arrival <- function(unit, time_pieces) {
     # unit で規定される単位枚数ごとの到着時間の系列を作成する． #
+    if(unit == -1) {
+        return(time_pieces)
+    }
     firstrow <- time_pieces[1,]
     time_pieces <- time_pieces[-1,]
     unit_pieces_series <- matrix(0, ncol=2, nrow=1)
@@ -99,10 +104,10 @@ logarithm_plot <- function(interval_series, lambda, picname) {
     plot(logcum, type="S", main=picname)
     abline(0, -lambda)
 }
+#logarithm_plot(ret$series, ret$lambda, paste(branch, session, "\\", name, sep="", collapse=NULL))
 
 chi_square_test <- function() {
     # 時間間隔のΧ^2 適合度検定 #
-    
 }
 
 system_renewed <- function() {
@@ -130,22 +135,46 @@ system_renewed <- function() {
     }
 }
 
-system_renewed()
-
 # main loop
-for (branch in branchs) {
-    for (session in sessions) {
-        dirpath <- paste(maindir, subdir, datayear, branch, session, sep="", collapse=NULL)
-        #par(new=F)
-        for (name in list.files(dirpath)) {
-            filepath <- paste(dirpath, "\\", name, sep="", collapse=NULL)
-            data <- readcsv(filepath, sep=",", header=F)
-            #int10 <- calc_arrival_rate(data[,1], 10)
-            #plot(int10, type="s", main="", #paste(branch, session, "\\", name, sep="", collapse=NULL), ylim=c(0, 2.0), xlim=c(0, 16))
-            #par(new=T)
-            unit_pieces <- unit_pieces_arrival(10, cbind(data[,1], data[,3]))
-            ret <- time_interval(unit_pieces[,1], data[1,4])
-            logarithm_plot(ret$series, ret$lambda, paste(branch, session, "\\", name, sep="", collapse=NULL))
+wfilepath <- paste(maindir, subdir, datayear, "\\arrival_rate.csv", sep="", collapse=NULL) #書き出すファイルの指定
+table <- matrix(0, ncol=4, nrow=1)
+unit <- -1
+
+for (b in 1:4) {
+    dirpath1 <- paste(maindir, subdir, datayear, branchs[b], sessions[1], sep="", collapse=NULL)
+    dirpath2 <- paste(maindir, subdir, datayear, branchs[b], sessions[2], sep="", collapse=NULL)
+    list1 <- list.files(dirpath1) # list of file names(morning)
+    list2 <- list.files(dirpath2) # list of file names(afternoon)
+    size <- length(list1) + length(list2)
+    p1 <- 1
+    p2 <- 1
+    rate_vec <- numeric(size) # result
+    boolean <- T
+    for (n in seq(size)) {
+        if (n == 1) {
+            filepath <- paste(dirpath1, "\\", list1[p1], sep="", collapse=NULL)
+            p1 <- p1 + 1
+        } else if (boolean) {
+            filepath <- paste(dirpath1, "\\", list1[p1], sep="", collapse=NULL)
+            p1 <- p1 + 1
+            boolean <- F
+        } else {
+            filepath <- paste(dirpath2, "\\", list2[p2], sep="", collapse=NULL)
+            p2 <- p2 + 1
+            boolean <- T
         }
+        data <- readcsv(filepath, sep=",", header=F)
+        unit_pieces <- unit_pieces_arrival(unit, cbind(data[,1], data[,3]))
+        ret <- time_interval(unit_pieces[,1], data[1,4])
+        rate_vec[n] <- ret$lambda
     }
+    
+    if (nrow(table) == 1) {
+        table <- matrix(0, ncol=4, nrow=size)
+    }
+    table[,b] <- rate_vec
 }
+
+colnames(table) <- c( "lambda_B", "lambda_A", "mu_A", "mu_B" )
+write.csv(table, wfilepath, quote = F, row.names = F)
+
