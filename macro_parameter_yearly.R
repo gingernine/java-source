@@ -30,7 +30,7 @@ code <- ""
 for (colname in colnames(summary)) {
         code <- paste(code, " & ", "{\\", "rm ", colname, "}", sep="", collapse=NULL)
 }
-code <- paste(code, " \\ \\hline", sep="", collapse=NULL)
+code <- paste(code, " \\\\ \\hline", sep="", collapse=NULL)
 code <- matrix(code, ncol=1, nrow=1)
 
 for (r in seq(nrow(summary))) {

@@ -163,8 +163,19 @@ for (b in 1:4) {
             p2 <- p2 + 1
             boolean <- T
         }
+        
         data <- readcsv(filepath, sep=",", header=F)
-        unit_pieces <- unit_pieces_arrival(unit, cbind(data[,1], data[,3]))
+        if (b==1 | b == 2) {
+            arg1 = "opening"
+            arg2 = ""
+            arg3 = ""
+        } else {
+            arg1 = "opening"
+            arg2 = "canceled"
+            arg3 = "traded"
+        }
+        unit_pieces <- unit_pieces_arrival(unit, cbind(data[data$V5==arg1|data$V5==arg2|data$V5==arg3, 1],
+                                                       data[data$V5==arg1|data$V5==arg2|data$V5==arg3, 3]))
         ret <- time_interval(unit_pieces[,1], data[1,4])
         rate_vec[n] <- ret$lambda
     }

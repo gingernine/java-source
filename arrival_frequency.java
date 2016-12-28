@@ -286,10 +286,10 @@ public class arrival_frequency {
 						biddepthtemp = Integer.parseInt(line.split(",", -1)[6]);
 						askpricetemp = Integer.parseInt(line.split(",", -1)[7]);
 						askdepthtemp = Integer.parseInt(line.split(",", -1)[8]);
-						limit_buy_line.add(inttime + ",,,,opening");
-						limit_sell_line.add(inttime + ",,,,opening");
-						market_buy_line.add(inttime + ",,,,opening");
-						market_sell_line.add(inttime + ",,,,opening");
+						limit_buy_line.add(inttime + ",,," + continuoustime + ",opening");
+						limit_sell_line.add(inttime + ",,," + continuoustime + ",opening");
+						market_buy_line.add(inttime + ",,," + continuoustime + ",opening");
+						market_sell_line.add(inttime + ",,," + continuoustime + ",opening");
 						move_freq_time_temp = inttime;
 						isInit = false; // 買い気配に初期値を入れたら初期化完了．
 					}
