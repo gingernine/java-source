@@ -47,17 +47,6 @@ public class arrival_frequency {
 		return (double) sum / n;
 	}
 
-	private static double variance(List<Integer> list) {
-		// リスト内要素の不偏分散を計算する．
-		int n = list.size();
-		double sum = 0;
-		double average = mean(list);
-		for (int j = 0; j < n; j++) {
-			sum += (((Integer) list.get(j)).intValue() - average)*(((Integer) list.get(j)).intValue() - average);
-		}
-		return sum / (n-1);
-	}
-
 	private static void mkdirs(String dirpath) throws IOException {
 		File dir = new File(dirpath);
 		if (!dir.exists()) {
@@ -86,7 +75,7 @@ public class arrival_frequency {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2009";
+		String datayear = "\\2007";
 		String datadir = "\\price_or_depth_change\\daily";
 		String writedir = "\\statistics_of_the_limit_order_book"; // 書き込みファイル
 		mkdirs(currentdir + writedir);
@@ -355,10 +344,10 @@ public class arrival_frequency {
 								 * 直後の気配値の幅で場合分けする．
 								 * (3)買いの最良気配の消滅時間として記録する．
 								 */
-								if (askprice - bidprice == 10) {
+								if (askprice == bidpricetemp) {
 									pieces_market_sell.add(tradevolume + askdepth);
-									market_sell_line.add(inttime + "," + bidprice + "," + tradevolume + askdepth + "," + continuoustime + ",traded");
-								} else if (askprice - bidprice > 10) {
+									market_sell_line.add(inttime + "," + bidprice + "," + tradevolume + "," + continuoustime + ",traded");
+								} else if (askprice > bidpricetemp) {
 									pieces_market_sell.add(tradevolume);
 									market_sell_line.add(inttime + "," + bidprice + "," + tradevolume + "," + continuoustime + ",traded");
 								}
@@ -389,10 +378,10 @@ public class arrival_frequency {
 								 * 直後の気配値の幅で場合分けする．
 								 * (3)売りの最良気配の消滅時間として記録する．
 								 */
-								if (askprice - bidprice == 10) {
+								if (askpricetemp == bidprice) {
 									pieces_market_buy.add(tradevolume + biddepth);
-									market_buy_line.add(inttime + "," + askprice + "," + tradevolume + biddepth + "," + continuoustime + ",traded");
-								} else if (askprice - bidprice > 10) {
+									market_buy_line.add(inttime + "," + askprice + "," + tradevolume + "," + continuoustime + ",traded");
+								} else if (askpricetemp > bidprice) {
 									pieces_market_buy.add(tradevolume);
 									market_buy_line.add(inttime + "," + askprice + "," + tradevolume + "," + continuoustime + ",traded");
 								}

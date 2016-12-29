@@ -23,7 +23,7 @@ convert_to_seconds <- function(time) {
     return(h + m + s)
 }
 
-calc_arrival_rate <- function(time_vector, interval) {
+arrival_rate_each_interval <- function(time_vector, interval) {
     # interval 分間隔での到着率を計算する． #
     size <- length(time_vector)
     stamp <- convert_to_seconds(time_vector[1]) # time stamp for while loop
@@ -48,15 +48,22 @@ calc_arrival_rate <- function(time_vector, interval) {
 #int10 <- calc_arrival_rate(data[,1], 10)
 #plot(int10, type="s", main="", #paste(branch, session, "\\", name, sep="", collapse=NULL), ylim=c(0, 2.0), xlim=c(0, 16))
 
-unit_pieces_arrival <- function(unit, time_pieces) {
-    # unit で規定される単位枚数ごとの到着時間の系列を作成する． #
+unit_pieces_arrival_rate <- function(unit, pieces, continuous_time) {
+    # unit で規定される単位枚数で到着率を計算する． #
     if(unit == -1) {
-        return(time_pieces)
+        return(sum(pieces) / continuous_time)
+    } else {
+        return(floor(sum(pieces) / unit) / continuous_time)
     }
+}
+
+temp <- function() {
     firstrow <- time_pieces[1,]
     time_pieces <- time_pieces[-1,]
-    unit_pieces_series <- matrix(0, ncol=2, nrow=1)
+    total <- sum(time_pieces[,2]) # total arrived pieces
+    unit_pieces_series <- numeric(ceiling(total/unit) + 1)
     pieces <- 0
+    p <- 2
     for (i in 1:nrow(time_pieces)) {
         cur <- time_pieces[i, 2]
         if (cur < unit - pieces) {
@@ -64,17 +71,19 @@ unit_pieces_arrival <- function(unit, time_pieces) {
             next
         } else {
             cur <- cur - unit + pieces
-            unit_pieces_series <- rbind(unit_pieces_series, matrix(c(time_pieces[i, 1], unit), ncol=2, nrow=1))
+            unit_pieces_series[p] <- time_pieces[i, 1]
+            p <- p+1
             pieces <- 0
         }
         q <- floor(cur / unit)
         pieces <- cur %% unit
         while (q > 0) {
-            unit_pieces_series <- rbind(unit_pieces_series, matrix(c(time_pieces[i, 1], unit), ncol=2, nrow=1))
+            unit_pieces_series[p] <- time_pieces[i, 1]
+            p <- p+1
             q <- q-1
         }
     }
-    unit_pieces_series[1,] <- matrix(firstrow, ncol=2, nrow=1)
+    unit_pieces_series[1] <- firstrow[1]
     return(unit_pieces_series)
 }
 
@@ -136,9 +145,13 @@ system_renewed <- function() {
 }
 
 # main loop
-wfilepath <- paste(maindir, subdir, datayear, "\\arrival_rate.csv", sep="", collapse=NULL) #書き出すファイルの指定
+unit <- 10
+if (unit == -1) {
+    wfilepath <- paste(maindir, subdir, datayear, "\\arrival_rate.csv", sep="", collapse=NULL) #書き出すファイルの指定
+} else {
+    wfilepath <- paste(maindir, subdir, datayear, "\\arrival_rate_per_", unit, "pieces.csv", sep="", collapse=NULL) #書き出すファイルの指定
+}
 table <- matrix(0, ncol=4, nrow=1)
-unit <- -1
 
 for (b in 1:4) {
     dirpath1 <- paste(maindir, subdir, datayear, branchs[b], sessions[1], sep="", collapse=NULL)
@@ -165,19 +178,16 @@ for (b in 1:4) {
         }
         
         data <- readcsv(filepath, sep=",", header=F)
-        if (b==1 | b == 2) {
-            arg1 = "opening"
+        if (b==1 | b==2) {
+            arg1 = ""
             arg2 = ""
-            arg3 = ""
         } else {
-            arg1 = "opening"
-            arg2 = "canceled"
-            arg3 = "traded"
+            arg1 = "canceled"
+            arg2 = "traded"
         }
-        unit_pieces <- unit_pieces_arrival(unit, cbind(data[data$V5==arg1|data$V5==arg2|data$V5==arg3, 1],
-                                                       data[data$V5==arg1|data$V5==arg2|data$V5==arg3, 3]))
-        ret <- time_interval(unit_pieces[,1], data[1,4])
-        rate_vec[n] <- ret$lambda
+        print(sum(data[,3], na.rm=T)) 
+        rate_vec[n] <- unit_pieces_arrival_rate(unit, data[data$V5==arg1|data$V5==arg2, 3], data[1,4])
+        print(filepath)
     }
     
     if (nrow(table) == 1) {
@@ -187,5 +197,5 @@ for (b in 1:4) {
 }
 
 colnames(table) <- c( "lambda_B", "lambda_A", "mu_A", "mu_B" )
-write.csv(table, wfilepath, quote = F, row.names = F)
+#write.csv(table, wfilepath, quote = F, row.names = F)
 
