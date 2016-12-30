@@ -111,8 +111,9 @@ for (ud in up_down) {
 }
 
 #到着率を取得する．
+unit <- 30
 subdir <- "\\arrival_time_series"
-filepath <- paste(maindir, subdir, datayear, "\\arrival_rate_per_30pieces.csv", sep="", collapse=NULL)
+filepath <- paste(maindir, subdir, datayear, "\\arrival_rate_per_", unit, "pieces.csv", sep="", collapse=NULL)
 ratemat <- read.csv(filepath, header=T)
 parameters <- cbind(parameters, ratemat)
 
@@ -134,10 +135,10 @@ integral <- function(f, lower, upper, ...) {
 
 probmat <- matrix(0, nrow=nrow(parameters), ncol=4)
 for (r in 1:nrow(parameters)) {
-    r_U_A <- parameters[r, "r^U_A"] / 30
-    r_D_A <- parameters[r, "r^D_A"] / 30
-    r_U_B <- parameters[r, "r^U_B"] / 30
-    r_D_B <- parameters[r, "r^D_B"] / 30
+    r_U_A <- ceiling(parameters[r, "r^U_A"] / unit)
+    r_D_A <- ceiling(parameters[r, "r^D_A"] / unit)
+    r_U_B <- ceiling(parameters[r, "r^U_B"] / unit)
+    r_D_B <- ceiling(parameters[r, "r^D_B"] / unit)
     l_A <- parameters[r, "lambda_A"]
     l_B <- parameters[r, "lambda_B"]
     m_A <- parameters[r, "mu_A"]
@@ -155,18 +156,17 @@ wfiledir <- paste(maindir, "\\transition_probability", datayear, sep="", collaps
 if (!file.exists(wfiledir)) {
     dir.create(wfiledir, recursive=T)
 }
-wfilepath <- paste(wfiledir, "\\arrival_rate_per_30pieces_Not_stochastic_initial_depth.csv", sep="", collapse=NULL)
+wfilepath <- paste(wfiledir, "\\arrival_rate_per_", unit, "pieces_Not_stochastic_initial_depth.csv", sep="", collapse=NULL)
 write.csv(probmat, wfilepath, quote=F)
 
 # transient_prob summary
-probmat <- read.csv(wfilepath, header=T)
-mean_UU <- mean(probmat[,2])
-sd_UU <- sd(probmat[,2])
-mean_UD <- mean(probmat[,3])
-sd_UD <- sd(probmat[,3])
-mean_DU <- mean(probmat[,4])
-sd_DU <- sd(probmat[,4])
-mean_DD <- mean(probmat[,5])
-sd_DD <- sd(probmat[,5])
+mean_UU <- mean(probmat[,1])
+sd_UU <- sd(probmat[,1])
+mean_UD <- mean(probmat[,2])
+sd_UD <- sd(probmat[,2])
+mean_DU <- mean(probmat[,3])
+sd_DU <- sd(probmat[,3])
+mean_DD <- mean(probmat[,4])
+sd_DD <- sd(probmat[,4])
 print(paste("{", mean_UU, "\\(", sd_UU, ")} & {", mean_UD, "\\(", sd_UD, ")}", sep="", collapse=NULL))
 print(paste("{", mean_DU, "\\(", sd_DU, ")} & {", mean_DD, "\\(", sd_DD, ")}", sep="", collapse=NULL))

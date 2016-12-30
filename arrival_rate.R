@@ -51,7 +51,7 @@ arrival_rate_each_interval <- function(time_vector, interval) {
 unit_pieces_arrival_rate <- function(unit, pieces, continuous_time) {
     # unit で規定される単位枚数で到着率を計算する． #
     if(unit == -1) {
-        return(sum(pieces) / continuous_time)
+        return(length(pieces) / continuous_time)
     } else {
         return(floor(sum(pieces) / unit) / continuous_time)
     }
@@ -145,7 +145,7 @@ system_renewed <- function() {
 }
 
 # main loop
-unit <- 10
+unit <- -1
 if (unit == -1) {
     wfilepath <- paste(maindir, subdir, datayear, "\\arrival_rate.csv", sep="", collapse=NULL) #書き出すファイルの指定
 } else {
@@ -197,5 +197,4 @@ for (b in 1:4) {
 }
 
 colnames(table) <- c( "lambda_B", "lambda_A", "mu_A", "mu_B" )
-#write.csv(table, wfilepath, quote = F, row.names = F)
-
+write.csv(table, wfilepath, quote = F, row.names = F)

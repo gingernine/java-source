@@ -75,7 +75,7 @@ public class arrival_frequency {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2007";
+		String datayear = "\\2009";
 		String datadir = "\\price_or_depth_change\\daily";
 		String writedir = "\\statistics_of_the_limit_order_book"; // 書き込みファイル
 		mkdirs(currentdir + writedir);
@@ -178,6 +178,7 @@ public class arrival_frequency {
 			boolean bid_down_move = false; // 上下板が同時に動くかを判定する．
 			boolean market_buy_order = false; // 買いの成行注文が来たらtrue.
 			boolean market_sell_order = false; // 売りの成行注文が来たらtrue.
+			int inttimetemp = 0;
 			int t = 0;
 
 			while ((line = brtxt.readLine()) != null) {
@@ -203,6 +204,29 @@ public class arrival_frequency {
 					continuous = true;
 				}
 				if (Arrays.asList(closing).contains(line)) {
+
+					if (freq_limit_sell != pieces_limit_sell.size()){
+						System.out.println("1:" + freq_limit_sell + "," + pieces_limit_sell.size());
+					} if (freq_limit_buy != pieces_limit_buy.size()) {
+						System.out.println("2:" + freq_limit_buy + "," + pieces_limit_buy.size());
+					} if (freq_market_sell != pieces_market_sell.size()) {
+						System.out.println("3:" + freq_market_sell + "," + pieces_market_sell.size());
+					} if (freq_market_buy != pieces_market_buy.size()) {
+						System.out.println("4:" + freq_market_buy + "," + pieces_market_buy.size());
+					} if (freq_cancel_sell != pieces_cancel_sell.size()) {
+						System.out.println("5:" + freq_cancel_sell + "," + pieces_cancel_sell.size());
+					} if (freq_cancel_buy != pieces_cancel_buy.size()){
+						System.out.println("6:" + freq_cancel_buy + "," + pieces_cancel_buy.size());
+					} if (freq_limit_sell != limit_sell_line.size()) {
+						System.out.println("7:" + freq_limit_sell + "," + limit_sell_line.size());
+					} if (freq_limit_buy != limit_buy_line.size()) {
+						System.out.println("8:" + freq_limit_buy + "," + limit_buy_line.size());
+					} if (freq_market_sell + freq_cancel_buy != market_sell_line.size()) {
+						System.out.println("9:" + (freq_market_sell + freq_cancel_buy) + "," + market_sell_line.size());
+					} if (freq_market_buy + freq_cancel_sell != market_buy_line.size()) {
+						System.out.println("10:" + (freq_market_buy + freq_cancel_sell) + "," + market_buy_line.size());
+					}
+
 					t = 1;
 					if (inttime > 120000) {
 						isMorning = false;
@@ -266,6 +290,7 @@ public class arrival_frequency {
 					bid_down_move = false;
 					market_buy_order = false;
 					market_sell_order = false;
+					inttimetemp = 0;
 				}
 
 				if (continuous && isInit) {
@@ -294,73 +319,55 @@ public class arrival_frequency {
 						askprice = Integer.parseInt(line.split(",", -1)[7]);
 						askdepth = Integer.parseInt(line.split(",", -1)[8]);
 
-						if (bidprice > bidpricetemp) {
+						if (market_sell_order) {
+							bid_down_move = true;
+							down_times_bid++;
+							limit_buy_line.add(inttime + ",,,,biddown");
+							market_sell_line.add(inttime + ",,,,biddown");
+							if (askprice - bidpricetemp == 10) {
+								/*
+								 * 成行売り注文によって価格が下落した場合，今の最良売り気配値と前の最良買い気配値が等しいなら
+								 * 成行注文枚数は約定枚数と気配数量の和とする．
+								 */
+								pieces_market_sell.add(tradevolume + askdepth);
+								market_sell_line.add(inttimetemp + "," + tradeprice + "," + (tradevolume + askdepth) + "," + continuoustime + ",traded");
+								operating_time_bid.add(sc.time_diff_in_seconds(operating_time_bid_temp, inttime));
+							} else if (askprice - bidpricetemp > 10) {
+								pieces_market_sell.add(tradevolume);
+								market_sell_line.add(inttimetemp + "," + tradeprice + "," + tradevolume + "," + continuoustime + ",traded");
+								operating_time_bid.add(sc.time_diff_in_seconds(operating_time_bid_temp, inttime));
+							}
+							operating_time_bid_temp = inttime;
+						} else if (bidprice > bidpricetemp) {
 							limit_buy_line.add(inttime + ",,,,bidup");
 							market_sell_line.add(inttime + ",,,,bidup");
 							bid_up_move = true;
 							up_times_bid++;
 							operating_time_bid_temp = inttime;
-							if (!market_buy_order) {
-								/* 直前に成行買い注文が無くて価格が上昇した場合，指値注文として記録する． */
+							if (askpricetemp - bidpricetemp > 10) {
+								/* 直前に1ティック以上離れていて価格が上昇した場合，指値注文として記録する． */
 								freq_limit_buy++;
 								limit_buy_line.add(inttime + "," + bidprice + "," + biddepth + "," + continuoustime + ",");
+								pieces_limit_buy.add(biddepth);
 							}
 						} else if (bidprice == bidpricetemp) {
 							if (biddepth > biddepthtemp) {
-								/*
-								 * 買い気配数量が増加したら
-								 * (1)指値注文の時間間隔を記録する．
-								 * (2)買いの指値注文として数える．
-								 * (3)増加分は指値注文数として記録する．
-								 */
-								limit_buy_line.add(inttime + "," + bidprice + "," + (biddepth - biddepthtemp) + "," + continuoustime + ",");
 								freq_limit_buy++;
+								limit_buy_line.add(inttime + "," + bidprice + "," + (biddepth - biddepthtemp) + "," + continuoustime + ",");
 								pieces_limit_buy.add(biddepth - biddepthtemp);
 							} else if (biddepth < biddepthtemp) {
-								/*
-								 * 買い気配数量が減少したら，直前に買い気配値での約定があった場合のみ
-								 * (1)成行注文の時間間隔を記録する．
-								 * (2)減少分は成行注文数として記録する．
-								 */
-								if (market_sell_order) {
-									market_sell_line.add(inttime + "," + bidprice + "," + (biddepthtemp - biddepth) + "," + continuoustime + ",traded");
-									pieces_market_sell.add(biddepthtemp - biddepth);
-								} else {
-									freq_cancel_buy++;
-									market_sell_line.add(inttime + "," + bidprice + "," + (biddepthtemp - biddepth) + "," + continuoustime + ",canceled");
-									pieces_cancel_buy.add(biddepthtemp - biddepth);
-								}
+								freq_cancel_buy++;
+								market_sell_line.add(inttime + "," + bidprice + "," + (biddepthtemp - biddepth) + "," + continuoustime + ",canceled");
+								pieces_cancel_buy.add(biddepthtemp - biddepth);
 							}
 						} else {
-							bid_down_move = true;
-							down_times_bid++;
-							limit_buy_line.add(inttime + ",,,,biddown");
-							market_sell_line.add(inttime + ",,,,biddown");
-							if (market_sell_order) {
-								/*
-								 * 買いの最良気配が0になって板が下に移動した場合，
-								 * (1)売りの成行注文時間間隔を記録する．
-								 * (2)買い気配が下に移動しても最良売り気配が移動していない場合がある．売り成行注文枚数の記録は
-								 * 直後の気配値の幅で場合分けする．
-								 * (3)買いの最良気配の消滅時間として記録する．
-								 */
-								if (askprice == bidpricetemp) {
-									pieces_market_sell.add(tradevolume + askdepth);
-									market_sell_line.add(inttime + "," + bidprice + "," + tradevolume + "," + continuoustime + ",traded");
-								} else if (askprice > bidpricetemp) {
-									pieces_market_sell.add(tradevolume);
-									market_sell_line.add(inttime + "," + bidprice + "," + tradevolume + "," + continuoustime + ",traded");
-								}
-								operating_time_bid.add(sc.time_diff_in_seconds(operating_time_bid_temp, inttime));
-							} else {
-								freq_cancel_buy++;
-								pieces_cancel_buy.add(biddepthtemp);
-								market_sell_line.add(inttime + "," + bidprice + "," + biddepthtemp + "," + continuoustime + ",canceled");
-							}
+							freq_cancel_buy++;
+							pieces_cancel_buy.add(biddepthtemp);
+							market_sell_line.add(inttime + "," + bidpricetemp + "," + biddepthtemp + "," + continuoustime + ",canceled");
 							operating_time_bid_temp = inttime;
 						}
 
-						if (askprice > askpricetemp) {
+						if (market_buy_order) {
 							if (bid_up_move) {
 								move_frequency.add(sc.time_diff_in_seconds(move_freq_time_temp, inttime));
 								move_freq_time_temp = inttime;
@@ -370,52 +377,34 @@ public class arrival_frequency {
 							up_times_ask++;
 							limit_sell_line.add(inttime + ",,,,askup");
 							market_buy_line.add(inttime + ",,,,askup");
-							if (market_buy_order) {
+							if (askpricetemp - bidprice == 10) {
 								/*
-								 * 売りの最良気配が0になって板が上に移動した場合，
-								 * (1)買いの成行注文時間間隔を記録する．
-								 * (2)売り気配が上に移動しても最良買い気配が移動していない場合がある．買い成行注文枚数の記録は
-								 * 直後の気配値の幅で場合分けする．
-								 * (3)売りの最良気配の消滅時間として記録する．
+								 * 成行買い注文によって価格が上昇した場合，今の最良買い気配値と前の最良売り気配値が等しいなら
+								 * 成行注文枚数は約定枚数と気配数量の和とする．
 								 */
-								if (askpricetemp == bidprice) {
-									pieces_market_buy.add(tradevolume + biddepth);
-									market_buy_line.add(inttime + "," + askprice + "," + tradevolume + "," + continuoustime + ",traded");
-								} else if (askpricetemp > bidprice) {
-									pieces_market_buy.add(tradevolume);
-									market_buy_line.add(inttime + "," + askprice + "," + tradevolume + "," + continuoustime + ",traded");
-								}
+								pieces_market_buy.add(tradevolume + biddepth);
+								market_buy_line.add(inttimetemp + "," + tradeprice + "," + (tradevolume + biddepth) + "," + continuoustime + ",traded");
 								operating_time_ask.add(sc.time_diff_in_seconds(operating_time_ask_temp, inttime));
-							} else {
-								freq_cancel_sell++;
-								pieces_cancel_sell.add(askdepthtemp);
-								market_buy_line.add(inttime + "," + askprice + "," + askdepthtemp + "," + continuoustime + ",canceled");
+							} else if (askpricetemp - bidprice > 10) {
+								pieces_market_buy.add(tradevolume);
+								market_buy_line.add(inttimetemp + "," + tradeprice + "," + tradevolume + "," + continuoustime + ",traded");
+								operating_time_ask.add(sc.time_diff_in_seconds(operating_time_ask_temp, inttime));
 							}
 							operating_time_ask_temp = inttime;
+						} else if (askprice > askpricetemp) {
+							freq_cancel_sell++;
+							pieces_cancel_sell.add(askdepthtemp);
+							market_buy_line.add(inttime + "," + askpricetemp + "," + askdepthtemp + "," + continuoustime + ",canceled");
+							operating_time_ask_temp = inttime;
 						} else if (askprice == askpricetemp) {
-							if (askdepth > askdepthtemp) {
-								/*
-								 * 売り気配数量が増加したら
-								 * (1)時間間隔を記録する．
-								 * (2)売りの指値注文として数える．
-								 * (3)増加分は指値注文数として記録する．
-								 */
-								limit_sell_line.add(inttime + "," + askprice + "," + (askdepth - askdepthtemp) + "," + continuoustime + ",");
+							if (askdepthtemp > askdepth) {
+								freq_cancel_sell++;
+								market_buy_line.add(inttime + "," + askprice + "," + (askdepthtemp - askdepth) + "," + continuoustime + ",canceled");
+								pieces_cancel_sell.add(askdepthtemp - askdepth);
+							} else if (askdepthtemp < askdepth) {
 								freq_limit_sell++;
+								limit_sell_line.add(inttime + "," + askprice + "," + (askdepth - askdepthtemp) + "," + continuoustime + ",");
 								pieces_limit_sell.add(askdepth - askdepthtemp);
-							} else if (askdepth < askdepthtemp) {
-								/* 売り気配数量が減少したら，直前に売り気配値での約定があった場合のみ
-								 * (1)成行注文の時間間隔を記録する．
-								 * (2)減少分は成行注文数として記録する．
-								 */
-								if (market_buy_order) {
-									market_buy_line.add(inttime + "," + askprice + "," + (askdepthtemp - askdepth) + "," + continuoustime + ",traded");
-									pieces_market_buy.add(askdepthtemp - askdepth);
-								} else {
-									freq_cancel_sell++;
-									market_buy_line.add(inttime + "," + askprice + "," + (askdepthtemp - askdepth) + "," + continuoustime + ",canceled");
-									pieces_cancel_sell.add(askdepthtemp - askdepth);
-								}
 							}
 						} else {
 							limit_sell_line.add(inttime + ",,,,askdown");
@@ -428,10 +417,11 @@ public class arrival_frequency {
 							}
 							down_times_ask++;
 							operating_time_ask_temp = inttime;
-							if (!market_sell_order) {
-								/* 直前に成行売り注文が無くて価格が下降した場合，指値注文として記録する． */
+							if (askpricetemp - bidpricetemp > 10) {
+								/* 直前に2ティック以上離れていて価格が下降した場合，指値注文として記録する． */
 								freq_limit_sell++;
 								limit_sell_line.add(inttime + "," + askprice + "," + askdepth + "," + continuoustime + ",");
+								pieces_limit_sell.add(askdepth);
 							}
 						}
 
@@ -449,12 +439,27 @@ public class arrival_frequency {
 
 						tradeprice = Integer.parseInt(line.split(",", -1)[3]);
 						tradevolume = Integer.parseInt(line.split(",", -1)[4]);
-						if (tradeprice == askprice) {
+						inttimetemp = inttime;
+						if (tradeprice == askpricetemp) {
 							freq_market_buy++;
-							market_buy_order = true;
-						} else if (tradeprice == bidprice) {
+							askdepthtemp -= tradevolume;
+							if (askdepthtemp == 0) {
+								askpricetemp += 10;
+								market_buy_order = true;
+								continue;
+							}
+							pieces_market_buy.add(tradevolume);
+							market_buy_line.add(inttimetemp + "," + tradeprice + "," + tradevolume + "," + continuoustime + ",traded");
+						} else if (tradeprice == bidpricetemp) {
 							freq_market_sell++;
-							market_sell_order = true;
+							biddepthtemp -= tradevolume;
+							if (biddepthtemp == 0) {
+								bidpricetemp -= 10;
+								market_sell_order = true;
+								continue;
+							}
+							pieces_market_sell.add(tradevolume);
+							market_sell_line.add(inttimetemp + "," + tradeprice + "," + tradevolume + "," + continuoustime + ",traded");
 						}
 					}
 				}
