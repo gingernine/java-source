@@ -1,13 +1,38 @@
 #モデルによる期待値と実際の値で，変動の頻度を比較する．
 
-library(SimpsonRule)
-
-factorial <- function(n) {
-    if (n==0) {
-        1
-    } else if (n > 0) {
-        prod(n)
+simpson_rule <- function(f, lower, upper, ...) {
+    #As a guide accuracy, "error" is set in arguments. However accuracy depends on the shape of the function.
+    f <- match.fun(f) #Dig up overwrited function name.
+    ff <- function(x) f(x, ...)
+    tmp <- 0
+    n <- 32
+    while(T) {
+        print(n)
+        sum <- 0
+        h <- (upper - lower) / (2 * n)
+        n2 <- floor(n / 10000)
+        n3 <- n %% 10000
+        i <- 1:n
+        if (n2 == 0) {
+            sum <- sum(ff(lower+(2*i-2)*h) + 4 * ff(lower+(2*i-1)*h) + ff(lower+2*i*h))
+        } else {
+            for (j in 1:n2) {
+                lower <- lower+2*(j-1)*10000*h
+                sum <- sum + sum(ff(lower+(2*i-2)*h) + 4 * ff(lower+(2*i-1)*h) + ff(lower+2*i*h))
+            }
+            if (n3 >= 1) {
+                lower <- lower+2*n2*10000*h
+                i <- 1:n3
+                sum <- sum + sum(ff(lower+(2*i-2)*h) + 4 * ff(lower+(2*i-1)*h) + ff(lower+2*i*h))
+            }
+        }
+        sum <- sum * h / 3
+        diff <- abs(sum - tmp)
+        if (diff < 1e-08) break
+        tmp <- sum
+        n <- n * 2
     }
+    return(list(value=sum, error=diff))
 }
 
 bessel <- function(x, n) {
@@ -17,7 +42,7 @@ bessel <- function(x, n) {
     while (diff >= 1e-08) {
         diff <- 1
         for (j in 1:i) {
-            diff <- diff * (x*x/4) / (j*(n+j))
+            diff <- diff * (x*x*0.25) / (j*(n+j))
         }
         sum <- sum + diff
         i <- i+1
@@ -25,7 +50,7 @@ bessel <- function(x, n) {
     for (j in 0:n-1) {
         sum <- sum / (n-j)
     }
-    return((x/2)^n * sum)
+    return((x*0.5)^n * sum)
 }
 
 f_A <- function(t, r_A, l_A, m_A) {
@@ -45,19 +70,19 @@ f_B_Exp <- function(t, r_B, l_B, m_B) {
 }
 
 f_U <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_A(t, r_A, l_A, m_A) * (1 - integrate(f_B, 0, t, r_B, l_B, m_B)$value)
+    f_A(t, r_A, l_A, m_A) * (1 - integrate(f_B, 1e-10, t, r_B, l_B, m_B)$value)
 }
 
 f_D <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_B(t, r_B, l_B, m_B) * (1 - integrate(f_A, 0, t, r_A, l_A, m_A)$value)
+    f_B(t, r_B, l_B, m_B) * (1 - integrate(f_A, 1e-10, t, r_A, l_A, m_A)$value)
 }
 
 f_U_Exp <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_A_Exp(t, r_A, l_A, m_A) * ( 1 - integrate(f_B, 0, t, r_B, l_B, m_B)$value )
+    f_A_Exp(t, r_A, l_A, m_A) * (1 - integrate(f_B, 1e-10, t, r_B, l_B, m_B)$value )
 }
 
 f_D_Exp <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_B_Exp(t, r_B, l_B, m_B) * ( 1 - integrate(f_A, 0, t, r_A, l_A, m_A)$value )
+    f_B_Exp(t, r_B, l_B, m_B) * (1 - integrate(f_A, 1e-10, t, r_A, l_A, m_A)$value )
 }
 
 maindir <- "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output\\statistics_of_the_limit_order_book"
@@ -86,14 +111,14 @@ for (r in 1:length(data[, "date"])) {
 #初期デプス r を取得する．
 subdir <- "\\initial_depth"
 up_down <- c( "\\after_up", "\\after_down" )
-sessioins <- c( "\\morning", "\\afternoon" )
+sessions <- c( "\\morning", "\\afternoon" )
 
 for (ud in up_down) {
     depthmat <- matrix(0, ncol=2, nrow=nrow(parameters))
     for (d in 1:nrow(data["date"])) {
         for (session in sessions) {
             filepath <- paste(maindir, subdir, datayear, ud, session, "\\", data[d, "date"], "_.csv", sep="", collapse=NULL)
-            
+
             if (file.exists(filepath)) {
                 depth <- read.csv(filepath, sep=",", header=F)
                 depthmat[d, 1] <- mean(depth[, 7]) # best bid
@@ -111,7 +136,7 @@ for (ud in up_down) {
 }
 
 #到着率を取得する．
-unit <- 30
+unit <- 1
 subdir <- "\\arrival_time_series"
 filepath <- paste(maindir, subdir, datayear, "\\arrival_rate_per_", unit, "pieces.csv", sep="", collapse=NULL)
 ratemat <- read.csv(filepath, header=T)
@@ -122,14 +147,18 @@ filepath <- paste(maindir, subdir, datayear, "_.csv", sep="", collapse=NULL)
 move_freq <- read.csv(filepath, header=T)
 move_freq <- cbind(move_freq, matrix(0, nrow=nrow(move_freq), ncol=2))
 
-integral <- function(f, lower, upper, ...) {
+integral <- function(f, lower, upper, int, ...) {
     error <- ""
     res <- 0
-    while (class(error)!="try-error"){
-        tmp <- res
-        error <- try(res <- integrate(f, lower, upper, ...)$value)
-        upper <- upper + 10
-    }
+    ff <- function(x) f(x, ...)
+    #while (class(error)!="try-error"){
+        #tmp <- tmp + res
+        #error <- try(res <- simpson_rule(ff, lower, upper)$value)
+        #lower <- upper
+        #upper <- upper + int
+        #print(upper)
+    #}
+    tmp <- simpson_rule(ff, lower, upper)$value
     return(tmp)
 }
 
@@ -143,10 +172,15 @@ for (r in 1:nrow(parameters)) {
     l_B <- parameters[r, "lambda_B"]
     m_A <- parameters[r, "mu_A"]
     m_B <- parameters[r, "mu_B"]
-    p_UU <- integral(f_U, 0, 100, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
-    p_UD <- integral(f_D, 0, 100, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
-    p_DU <- integral(f_U, 0, 100, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
-    p_DD <- integral(f_D, 0, 100, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
+    print(rownames(parameters)[r])
+    #p_UU <- integrate(f_U, 1e-10, 100, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
+    curve(f_U(x, r_U_A, l_A, m_A, r_U_B, l_B, m_B), xlim=c(10,1000))
+    #p_UD <- integrate(f_D, 1e-10, 100, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
+    curve(f_D(x, r_U_A, l_A, m_A, r_U_B, l_B, m_B), xlim=c(10,1000))
+    #p_DU <- integrate(f_U, 1e-10, 100, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
+    curve(f_U(x, r_D_A, l_A, m_A, r_D_B, l_B, m_B), xlim=c(10,1000))
+    #p_DD <- integrate(f_D, 1e-10, 100, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
+    curve(f_D(x, r_D_A, l_A, m_A, r_D_B, l_B, m_B), xlim=c(10,1000))
     probmat[r,] <- c(p_UU, p_UD, p_DU, p_DD)
 }
 colnames(probmat) <- c( "p_UU", "p_UD", "p_DU", "p_DD" )
@@ -157,16 +191,16 @@ if (!file.exists(wfiledir)) {
     dir.create(wfiledir, recursive=T)
 }
 wfilepath <- paste(wfiledir, "\\arrival_rate_per_", unit, "pieces_Not_stochastic_initial_depth.csv", sep="", collapse=NULL)
-write.csv(probmat, wfilepath, quote=F)
+#write.csv(probmat, wfilepath, quote=F)
 
 # transient_prob summary
-mean_UU <- mean(probmat[,1])
-sd_UU <- sd(probmat[,1])
-mean_UD <- mean(probmat[,2])
-sd_UD <- sd(probmat[,2])
-mean_DU <- mean(probmat[,3])
-sd_DU <- sd(probmat[,3])
-mean_DD <- mean(probmat[,4])
-sd_DD <- sd(probmat[,4])
+mean_UU <- mean(probmat[,"p_UU"])
+sd_UU <- sd(probmat[,"p_UU"])
+mean_UD <- mean(probmat[,"p_UD"])
+sd_UD <- sd(probmat[,"p_UD"])
+mean_DU <- mean(probmat[,"p_DU"])
+sd_DU <- sd(probmat[,"p_DU"])
+mean_DD <- mean(probmat[,"p_DD"])
+sd_DD <- sd(probmat[,"p_DD"])
 print(paste("{", mean_UU, "\\(", sd_UU, ")} & {", mean_UD, "\\(", sd_UD, ")}", sep="", collapse=NULL))
 print(paste("{", mean_DU, "\\(", sd_DU, ")} & {", mean_DD, "\\(", sd_DD, ")}", sep="", collapse=NULL))
