@@ -1,5 +1,7 @@
 #モデルによる期待値と実際の値で，変動の頻度を比較する．
 
+library(Rmpfr)
+
 simpson_rule <- function(f, lower, upper, ...) {
     #As a guide accuracy, "error" is set in arguments. However accuracy depends on the shape of the function.
     f <- match.fun(f) #Dig up overwrited function name.
@@ -53,8 +55,9 @@ bessel <- function(x, n) {
     return((x*0.5)^n * sum)
 }
 
+mpfrbits <- 1000000
 f_A <- function(t, r_A, l_A, m_A) {
-    exp(-(l_A+m_A)*t) * r_A/t * (m_A/l_A)^(r_A/2) * besselI(2*t*sqrt(l_A*m_A), r_A)
+    mpfr(exp(-(l_A+m_A)*t), mpfrbits) * r_A/t * (m_A/l_A)^(r_A/2) * mpfr(besselI(2*t*sqrt(l_A*m_A), r_A), mpfrbits)
 }
 
 f_B <- function(t, r_B, l_B, m_B) {
@@ -70,20 +73,22 @@ f_B_Exp <- function(t, r_B, l_B, m_B) {
 }
 
 f_U <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_A(t, r_A, l_A, m_A) * (1 - integrate(f_B, 1e-10, t, r_B, l_B, m_B)$value)
+    mpfr(f_A(t, r_A, l_A, m_A), mpfrbits) * mpfr(integrate(f_B, 1e-10, t, r_B, l_B, m_B)$value, mpfrbits)
 }
 
 f_D <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_B(t, r_B, l_B, m_B) * (1 - integrate(f_A, 1e-10, t, r_A, l_A, m_A)$value)
+    f_B(t, r_B, l_B, m_B) * integrate(f_A, 1e-10, t, r_A, l_A, m_A)$value
 }
 
 f_U_Exp <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_A_Exp(t, r_A, l_A, m_A) * (1 - integrate(f_B, 1e-10, t, r_B, l_B, m_B)$value )
+    f_A_Exp(t, r_A, l_A, m_A) * integrate(f_B, 1e-10, t, r_B, l_B, m_B)$value
 }
 
 f_D_Exp <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    f_B_Exp(t, r_B, l_B, m_B) * (1 - integrate(f_A, 1e-10, t, r_A, l_A, m_A)$value )
+    f_B_Exp(t, r_B, l_B, m_B) * integrate(f_A, 1e-10, t, r_A, l_A, m_A)$value
 }
+
+
 
 maindir <- "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output\\statistics_of_the_limit_order_book"
 datayear <- "\\2007"
@@ -147,18 +152,19 @@ filepath <- paste(maindir, subdir, datayear, "_.csv", sep="", collapse=NULL)
 move_freq <- read.csv(filepath, header=T)
 move_freq <- cbind(move_freq, matrix(0, nrow=nrow(move_freq), ncol=2))
 
-integral <- function(f, lower, upper, int, ...) {
-    error <- ""
-    res <- 0
-    ff <- function(x) f(x, ...)
-    #while (class(error)!="try-error"){
-        #tmp <- tmp + res
-        #error <- try(res <- simpson_rule(ff, lower, upper)$value)
-        #lower <- upper
-        #upper <- upper + int
-        #print(upper)
-    #}
-    tmp <- simpson_rule(ff, lower, upper)$value
+integral <- function(f, lower, upper, r_A, l_A, m_A, r_B, l_B, m_B, up) {
+    if (up) {
+        if (l_A < m_A)
+            p <- 1
+        else
+            p <- (l_A/m_A)^{-r_A}
+    } else {
+        if (l_B < m_B)
+            p <- 1
+        else
+            p <- (l_B/m_B)^{-r_B}
+    }
+    res <- p - integrate(f, lower, upper, r_A, l_A, m_A, r_B, l_B, m_B)$value
     return(tmp)
 }
 
@@ -173,14 +179,14 @@ for (r in 1:nrow(parameters)) {
     m_A <- parameters[r, "mu_A"]
     m_B <- parameters[r, "mu_B"]
     print(rownames(parameters)[r])
-    #p_UU <- integrate(f_U, 1e-10, 100, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
-    curve(f_U(x, r_U_A, l_A, m_A, r_U_B, l_B, m_B), xlim=c(10,1000))
+    p_UU <- integrate(f_U, 1e-10, 100, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
+    curve(f_U(x, r_U_A, l_A, m_A, r_U_B, l_B, m_B, T), xlim=c(10,1000))
     #p_UD <- integrate(f_D, 1e-10, 100, r_U_A, l_A, m_A, r_U_B, l_B, m_B)
-    curve(f_D(x, r_U_A, l_A, m_A, r_U_B, l_B, m_B), xlim=c(10,1000))
+    curve(f_D(x, r_U_A, l_A, m_A, r_U_B, l_B, m_B, F), xlim=c(10,1000))
     #p_DU <- integrate(f_U, 1e-10, 100, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
-    curve(f_U(x, r_D_A, l_A, m_A, r_D_B, l_B, m_B), xlim=c(10,1000))
+    curve(f_U(x, r_D_A, l_A, m_A, r_D_B, l_B, m_B, T), xlim=c(10,1000))
     #p_DD <- integrate(f_D, 1e-10, 100, r_D_A, l_A, m_A, r_D_B, l_B, m_B)
-    curve(f_D(x, r_D_A, l_A, m_A, r_D_B, l_B, m_B), xlim=c(10,1000))
+    curve(f_D(x, r_D_A, l_A, m_A, r_D_B, l_B, m_B, F), xlim=c(10,1000))
     probmat[r,] <- c(p_UU, p_UD, p_DU, p_DD)
 }
 colnames(probmat) <- c( "p_UU", "p_UD", "p_DU", "p_DD" )

@@ -1,38 +1,32 @@
 
-#ƒKƒ“ƒ}•ª•z‚Ìƒpƒ‰ƒ[ƒ^‚ÌÅ–Ş„’è—Ê‚ğŒvZ‚·‚éD
+#?K???}???z?Ìƒp?????[?^?ÌÅ–Ş????Ê‚??v?Z?????D
 gammaparam <- function(X) {
-    #ƒfƒBƒKƒ“ƒ}ŠÖ”‚Ì“±ŠÖ”‚ğ‹‰”Œ`®‚ÅŒvZ‚·‚éD
+    #?f?B?K???}?Ö??Ì“??Ö??ï¿½ï¿½ï¿½ï¿½??`???ÅŒv?Z?????D
     ddigamma <- function(x) {
         sum <- 0
         n <- 0
-        while(T) {
+        while( 1 / (x + n)^2 >= 1e-08 ) {
             sum <- sum + 1 / (x + n)^2
             n <- n + 1
-            if (1 / (x + n)^2 < 1e-08) {
-                break #‚ ‚é’ö“x‚ÌŒë·‚Å‘Å‚¿~‚ßD
-            }
         }
         return(sum)
     }
     mlogx <- mean(log(X))
     logmx <- log(mean(X))
-    
-    #ƒjƒ…[ƒgƒ“–@‚É‚æ‚éÄ‹AŒvZ.
+
+    #?j???[?g???@?É‚????Ä‹A?v?Z.
     iter <- function(a) {
         mlogx - logmx + log(a) - digamma(a)
     }
     a <- exp(-1)
-    while(T) {
+    while( abs(tmp - a) >= 1e-08 ) {
         tmp <- a
         a <- a - iter(a) / (1/a - ddigamma(a))
-        if (abs(tmp - a) < 1e-08){
-            break #‚ ‚é’ö“x‚ÌŒë·‚Å‘Å‚¿~‚ßD
-        }
     }
-    return(list(alpha = a, beta = mean(X) / a)) 
+    return(list(alpha = a, beta = mean(X) / a))
 }
 
-#Gamma density function 
+#Gamma density function
 gammadense <- function(x, alpha, beta) {
     return(1/(gamma(alpha) * beta^alpha) * x^(alpha-1) * exp(-x/beta))
 }
@@ -49,22 +43,22 @@ for (tail in tails) {
     table <- matrix(0, ncol=2, nrow=2)
     colnames(table) <- c( "alpha", "beta" )
     rownames(table) <- c( "bid.depth", "ask.depth" )
-    
+
     for (ba in bidask) {
         X <- numeric(max(data[, ba]))
         for (i in data[, ba]) {
             X[i] <- X[i] + 1
         }
-        
+
         s <- sum(X)
         for (i in seq(length(X))) {
             X[i] <- X[i] / s
         }
-        
+
         alpha <- gammaparam(data[, ba])$alpha
         beta <- gammaparam(data[, ba])$beta
         table[ba, ] <- c(alpha, beta)
-        
+
         pngdir <- paste(maindir, subdir, datayear, "maximum_likelihood", sep = "", collapse = NULL)
         if (!file.exists(pngdir)) {
             dir.create(pngdir)
@@ -74,7 +68,7 @@ for (tail in tails) {
         xmin <- 1e-01
         xmax <- length(X)
         ymax <- max(X)
-        plot(X, xlim=c(xmin, xmax), ylim=c(0, ymax), type="h", 
+        plot(X, xlim=c(xmin, xmax), ylim=c(0, ymax), type="h",
              main=paste(tail, ba, "\n alpha=", alpha, ", beta=", beta, sep = "", collapse = NULL), ylab="probability", xlab="initial depth")
         par(new=T)
         curve(gammadense(x, alpha, beta), xlim=c(xmin, xmax), ylim=c(0, ymax), col=2,
