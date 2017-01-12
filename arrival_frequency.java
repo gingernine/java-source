@@ -75,7 +75,7 @@ public class arrival_frequency {
 	public static void main(String[] args) throws IOException {
 
 		String currentdir = "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output";
-		String datayear = "\\2009";
+		String datayear = "\\2007";
 		String datadir = "\\price_or_depth_change\\daily";
 		String writedir = "\\statistics_of_the_limit_order_book"; // 書き込みファイル
 		mkdirs(currentdir + writedir);
@@ -142,6 +142,7 @@ public class arrival_frequency {
 			List<Integer> move_frequency       = new ArrayList<Integer>(); // time interval of fluctuations
 			List<Integer> operating_time_bid   = new ArrayList<Integer>(); // 買い板が消滅するまでの時間
 			List<Integer> operating_time_ask   = new ArrayList<Integer>(); // 売り板が消滅するまでの時間
+			List<String> transient_prob        = new ArrayList<String>(); // 推移行列の計算のため推移の仕方を記録する
 			int bidprice = 0; // 最良買い気配値
 			int bidpricetemp = 0; // 最良買い気配値の一時保存
 			int askprice = 0; // 最良売り気配値
@@ -257,6 +258,7 @@ public class arrival_frequency {
 					filewriter(limit_sell_line, currentdir + writedir + "\\arrival_time_series" + datayear + "\\limit_sell", rfiledate, isMorning);
 					filewriter(market_buy_line, currentdir + writedir + "\\arrival_time_series" + datayear + "\\market_buy", rfiledate, isMorning);
 					filewriter(market_sell_line, currentdir + writedir + "\\arrival_time_series" + datayear + "\\market_sell", rfiledate, isMorning);
+					filewriter(transient_prob, currentdir + writedir + "\\transition_probability" + datayear + "\\observed", rfiledate, isMorning);
 
 					// initialize (morning, afternoon session に分かれている日のため)
 					freq_market_buy    = 0;
@@ -284,6 +286,7 @@ public class arrival_frequency {
 					move_frequency     = new ArrayList<Integer>();
 					operating_time_bid   = new ArrayList<Integer>();
 					operating_time_ask   = new ArrayList<Integer>();
+					transient_prob       = new ArrayList<String>();
 					continuous = false;
 					isInit = true;
 					bid_up_move = false;
@@ -369,6 +372,7 @@ public class arrival_frequency {
 
 						if (market_buy_order) {
 							if (bid_up_move) {
+								transient_prob.add("up");
 								move_frequency.add(sc.time_diff_in_seconds(move_freq_time_temp, inttime));
 								move_freq_time_temp = inttime;
 								pw[1].println(line);
@@ -410,6 +414,7 @@ public class arrival_frequency {
 							limit_sell_line.add(inttime + ",,,,askdown");
 							market_buy_line.add(inttime + ",,,,askdown");
 							if (bid_down_move) {
+								transient_prob.add("down");
 								move_frequency.add(sc.time_diff_in_seconds(move_freq_time_temp, inttime));
 								move_freq_time_temp = inttime;
 								pw[2].println(line);

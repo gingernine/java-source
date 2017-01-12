@@ -4,7 +4,7 @@ maindir <- "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei
 subdir <- "\\statistics_of_the_limit_order_book\\arrival_time_series"
 datayear <- "\\2007"
 
-filename <- "arrival_rate_per_30pieces"
+filename <- "arrival_rate"#_per_30pieces"
 rfilepath <- paste(maindir, subdir, datayear, "\\", filename, ".csv", sep="", collapse=NULL)
 table <- read.csv(rfilepath, header=T)
 

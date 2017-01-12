@@ -26,8 +26,8 @@ laguerre <- function(x, n) {
 }
 
 par(new=F)
-for (n in 1:4) {
-    curve(laguerre(x, n), xlim = c(-1, 30), ylim = c(-1, 1), col=n)
+for (n in 1:6) {
+    curve(laguerre(x, n), xlim = c(-30, 30), ylim = c(-100, 100), col=n)
     par(new=T)
 }
 

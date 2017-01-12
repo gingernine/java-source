@@ -2,7 +2,7 @@
 
 maindir <- "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output"
 subdir <- "\\statistics_of_the_limit_order_book\\yearly"
-datayear <- "\\2009"
+datayear <- "\\2007"
 
 filepath <- paste(maindir, currentdir, datayear, "_.csv", sep="", collapse=NULL)
 data <- read.csv(filepath, sep=",", header=T)

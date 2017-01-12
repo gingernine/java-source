@@ -145,7 +145,7 @@ system_renewed <- function() {
 }
 
 # main loop
-unit <- -1
+unit <- 30
 if (unit == -1) {
     wfilepath <- paste(maindir, subdir, datayear, "\\arrival_rate.csv", sep="", collapse=NULL) #書き出すファイルの指定
 } else {
