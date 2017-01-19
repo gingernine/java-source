@@ -1,79 +1,85 @@
 #モデルによる期待値と実際の値で，変動の頻度を比較する．
 
-library(Rmpfr)
-
-simpson_rule <- function(f, lower, upper, ...) {
-    #As a guide accuracy, "error" is set in arguments. However accuracy depends on the shape of the function.
-    f <- match.fun(f) #Dig up overwrited function name.
-    ff <- function(x) f(x, ...)
-    tmp <- 0
-    n <- 32
-    while(T) {
-        print(n)
-        sum <- 0
-        h <- (upper - lower) / (2 * n)
-        n2 <- floor(n / 10000)
-        n3 <- n %% 10000
-        i <- 1:n
-        if (n2 == 0) {
-            sum <- sum(ff(lower+(2*i-2)*h) + 4 * ff(lower+(2*i-1)*h) + ff(lower+2*i*h))
-        } else {
-            for (j in 1:n2) {
-                lower <- lower+2*(j-1)*10000*h
-                sum <- sum + sum(ff(lower+(2*i-2)*h) + 4 * ff(lower+(2*i-1)*h) + ff(lower+2*i*h))
-            }
-            if (n3 >= 1) {
-                lower <- lower+2*n2*10000*h
-                i <- 1:n3
-                sum <- sum + sum(ff(lower+(2*i-2)*h) + 4 * ff(lower+(2*i-1)*h) + ff(lower+2*i*h))
-            }
-        }
-        sum <- sum * h / 3
-        diff <- abs(sum - tmp)
-        if (diff < 1e-08) break
-        tmp <- sum
-        n <- n * 2
+besseli0 <- function(x, e) {
+    ax <- abs(x)
+    if (ax < 3.75) {
+        y <- x / 3.75
+        y <- y * y
+        ans <- 1.0 + y*(3.5156229 + y*(3.0899424 + y*(1.2067492
+                    + y*(0.2659732 + y*(0.360768e-1 + y*0.45813e-2)))))
+        ans <- ans * exp(-e)
+    } else {
+        y <- 3.75 / ax
+        ans <- (exp(ax-e) / sqrt(ax)) * (0.39894228 + y*(0.1328592e-1
+                    + y*(0.225319e-2 + y*(-0.157565e-2 + y*(0.916281e-2
+                    + y*(-0.2057706e-1 + y*(0.2635537e-1 + y*(-0.1647633e-1
+                    + y*0.392377e-2))))))))
     }
-    return(list(value=sum, error=diff))
+    return(ans)
 }
 
-bessel <- function(x, n) {
-    sum <- 1
-    diff <- 1
-    i <- 1
-    while (diff >= 1e-08) {
-        diff <- 1
-        for (j in 1:i) {
-            diff <- diff * (x*x*0.25) / (j*(n+j))
-        }
-        sum <- sum + diff
-        i <- i+1
+besseli1 <- function(x, e) {
+    ax <- abs(x)
+    if(ax < 3.75) {
+        y <- x / 3.75
+        y <- y * y
+        ans <- ax*(0.5+y*(0.87890594+y*(0.51498869+y*(0.15084934
+                    +y*(0.2658733e-1+y*(0.301532e-2+y*0.32411e-3))))))
+        ans <- ans * exp(-e)
+    } else {
+        y <- 3.75 / ax
+        ans <- 0.2282967e-1+y*(-0.2895312e-1+y*(0.1787654e-1
+                                -y*0.420059e-2))
+        ans <- 0.39894228+y*(-0.3988024e-1+y*(-0.362018e-2
+                                             +y*(0.163801e-2+y*(-0.1031555e-1+y*ans))))
+        ans <- ans * (exp(ax-e)/sqrt(ax))
     }
-    for (j in 0:n-1) {
-        sum <- sum / (n-j)
-    }
-    return((x*0.5)^n * sum)
+    return(ans)
 }
 
-mpfrbits <- 1000000
+besseli <- function(x, n, e) {
+    ACC <- 200
+    if (n == 0) {
+        return(besseli0(x, e))
+    } else if (n == 1) {
+        return(besseli1(x, e))
+    } else {
+        tox <- 2 / abs(x)
+        bi <- 1
+        bip <- 0
+        j=2*(n+floor(sqrt(ACC*n)))
+        while(j > 0) {
+            bim <- bip + j * tox * bi
+            bip <- bi
+            bi <- bim
+            if (j == n) {
+                ans <- bip
+            }
+            j <- j-1
+        }
+        ans <- ans * besseli0(x, e) / bi
+        return(ans)
+    }
+}
+
 f_A <- function(t, r_A, l_A, m_A) {
-    mpfr(exp(-(l_A+m_A)*t), mpfrbits) * r_A/t * (m_A/l_A)^(r_A/2) * mpfr(besselI(2*t*sqrt(l_A*m_A), r_A), mpfrbits)
+    r_A/t * (m_A/l_A)^(r_A/2) * besseli(2*t*sqrt(l_A*m_A), r_A, (l_A+m_A)*t)
 }
 
 f_B <- function(t, r_B, l_B, m_B) {
-    exp(-(l_B+m_B)*t) * r_B/t * (m_B/l_B)^(r_B/2) * besselI(2*t*sqrt(l_B*m_B), r_B)
+    r_B/t * (m_B/l_B)^(r_B/2) * besseli(2*t*sqrt(l_B*m_B), r_B, (l_B+m_B)*t)
 }
 
 f_A_Exp <- function(t, r_A, l_A, m_A) {
-    exp(-(l_A+m_A)*t) * r_A * (m_A/l_A)^(r_A/2) * besselI(2*t*sqrt(l_A*m_A), r_A)
+    r_A * (m_A/l_A)^(r_A/2) * besseli(2*t*sqrt(l_A*m_A), r_A, (l_A+m_A)*t)
 }
 
 f_B_Exp <- function(t, r_B, l_B, m_B) {
-    exp(-(l_B+m_B)*t) * r_B * (m_B/l_B)^(r_B/2) * besselI(2*t*sqrt(l_B*m_B), r_B)
+    r_B * (m_B/l_B)^(r_B/2) * besseli(2*t*sqrt(l_B*m_B), r_B, (l_B+m_B)*t)
 }
 
 f_U <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
-    mpfr(f_A(t, r_A, l_A, m_A), mpfrbits) * mpfr(integrate(f_B, 1e-10, t, r_B, l_B, m_B)$value, mpfrbits)
+    f_A(t, r_A, l_A, m_A) * integrate(f_B, 1e-10, t, r_B, l_B, m_B)$value
 }
 
 f_D <- function(t, r_A, l_A, m_A, r_B, l_B, m_B) {
@@ -146,6 +152,10 @@ subdir <- "\\arrival_time_series"
 filepath <- paste(maindir, subdir, datayear, "\\arrival_rate_per_", unit, "pieces.csv", sep="", collapse=NULL)
 ratemat <- read.csv(filepath, header=T)
 parameters <- cbind(parameters, ratemat)
+
+wfilepath <- "C:\\Users\\kklab\\Desktop\\yurispace\\integration_cpp\\source"
+wfilename <- paste(datayear, "\\parameters_", unit, "pieces.csv", sep="", collapse=NULL)
+write.csv(parameters, paste(wfilepath, wfilename, sep="", collapse=NULL))
 
 subdir <- "\\move_frequency"
 filepath <- paste(maindir, subdir, datayear, "_.csv", sep="", collapse=NULL)
