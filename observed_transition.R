@@ -55,4 +55,4 @@ mean(probmat[,4])
 sqrt(sd(probmat[,4]))
 
 wfilepath <- "C:\\Users\\kklab\\Desktop\\yurispace\\integration_cpp\\source\\2007\\probability_observed.csv"
-write.csv(probmat, wfilepath, row.names = T)
+write.csv(probmat, wfilepath, row.names=T, quote=F)
