@@ -43,7 +43,7 @@ for (session in sessions) {
                 vector[1, ceiling( (sectime - opening) / interval )] <- vector[1, ceiling( (sectime - opening) / interval )] + 1
             }
             
-            rownames(vector) <- paste(substring(name, 1, 4), substring(name, 5, 6), substring(name, 7, 8), sep="/", collapse=NULL)
+            rownames(vector) <- substring(name, 1, 8)
             datevec[1,i] <- mean(vector[1,])
             if (!app[i]) {
                 write.table(vector, wfilepaths[i], sep=",", row.names=T, col.names=F, append=F)

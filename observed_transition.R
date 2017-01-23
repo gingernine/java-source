@@ -28,7 +28,7 @@ for (session in sessions) {
             }
             tmp <- d
         }
-        rownames(vector) <- c(paste(name, session, sep="_", collapse=NULL))
+        rownames(vector) <- c(paste(substr(name, 1,4), substr(name, 5,6), substr(name, 7,8), substr(session,2,10), sep="/", collapse=NULL))
         colnames(vector) <- c( "p_UU", "p_UD", "p_DU", "p_DD")
         table <- rbind(table, vector)
     }
@@ -36,6 +36,8 @@ for (session in sessions) {
 
 table <- table[-1,]
 probmat <- matrix(0, ncol=ncol(table), nrow=nrow(table))
+rownames(probmat) <- rownames(table)
+colnames(probmat) <- colnames(table)
 for (i in 1:nrow(probmat)) {
     probmat[i,1] <- table[i,1] / (table[i,1]+table[i,2])
     probmat[i,2] <- table[i,2] / (table[i,1]+table[i,2])
@@ -51,3 +53,6 @@ mean(probmat[,3])
 sqrt(sd(probmat[,3]))
 mean(probmat[,4])
 sqrt(sd(probmat[,4]))
+
+wfilepath <- "C:\\Users\\kklab\\Desktop\\yurispace\\integration_cpp\\source\\2007\\probability_observed.csv"
+write.csv(probmat, wfilepath, row.names = T)

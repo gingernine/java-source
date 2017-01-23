@@ -144,6 +144,7 @@ public class arrival_frequency {
 			List<Integer> operating_time_ask   = new ArrayList<Integer>(); // 売り板が消滅するまでの時間
 			List<String> transient_prob        = new ArrayList<String>(); // 推移行列の計算のため推移の仕方を記録する
 			List<String> move_record           = new ArrayList<String>(); // 板の推移を記録する．
+			List<String> sessionsep            = new ArrayList<String>(); // 一日のデータをセッションに分けてデータを作る．
 			int bidprice = 0; // 最良買い気配値
 			int bidpricetemp = 0; // 最良買い気配値の一時保存
 			int askprice = 0; // 最良売り気配値
@@ -204,10 +205,13 @@ public class arrival_frequency {
 					}
 					continuoustime = sc.time_diff_in_seconds(inttime, closingtime);
 					move_record.add(line+",opening");
+					sessionsep.add(line+",opening");
 					continuous = true;
+					continue;
 				}
 				if (Arrays.asList(closing).contains(line)) {
 					move_record.add(line+",closing");
+					sessionsep.add(line+",closing");
 
 					if (freq_limit_sell != pieces_limit_sell.size()){
 						System.out.println("1:" + freq_limit_sell + "," + pieces_limit_sell.size());
@@ -263,6 +267,7 @@ public class arrival_frequency {
 					filewriter(market_sell_line, currentdir + writedir + "\\arrival_time_series" + datayear + "\\market_sell", rfiledate, isMorning);
 					filewriter(transient_prob, currentdir + writedir + "\\transition_probability" + datayear + "\\observed", rfiledate, isMorning);
 					filewriter(move_record, currentdir + writedir + "\\move_frequency" + datayear, rfiledate, isMorning);
+					filewriter(sessionsep, currentdir + datayear + "\\sessionsep", rfiledate, isMorning);
 
 					// initialize (morning, afternoon session に分かれている日のため)
 					freq_market_buy    = 0;
@@ -292,6 +297,7 @@ public class arrival_frequency {
 					operating_time_ask   = new ArrayList<Integer>();
 					transient_prob       = new ArrayList<String>();
 					move_record          = new ArrayList<String>();
+					sessionsep           = new ArrayList<String>();
 					continuous = false;
 					isInit = true;
 					bid_up_move = false;
@@ -302,6 +308,7 @@ public class arrival_frequency {
 				}
 
 				if (continuous && isInit) {
+					sessionsep.add(line);
 					// 最良気配に初期値を入れる．
 					if (line.split(",", -1)[2].equals("Quote")) {
 						bidpricetemp = Integer.parseInt(line.split(",", -1)[5]);
@@ -315,9 +322,11 @@ public class arrival_frequency {
 						move_freq_time_temp = inttime;
 						isInit = false; // 買い気配に初期値を入れたら初期化完了．
 					}
+					continue;
 				}
 
 				if (continuous && !isInit) {
+					sessionsep.add(line);
 					// ザラバのみデータ抽出．
 					if (line.split(",", -1)[2].equals("Quote")) {
 
