@@ -1,4 +1,4 @@
-#最後に板が上がった直後�?�数量，最後に板が下がった直後�?�数量�?�ヒストグラ�?を作�?�する�?
+#最後に板が上がった直後???数量，最後に板が下がった直後???数量???ヒストグラ???を作???する???
 
 #histogram test code 
 filepath <- "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output\\statistics_of_the_limit_order_book\\initial_depth\\2007\\after_up_.csv"
@@ -7,27 +7,41 @@ data <- read.csv(filepath, header=T)
 date <- data[1,1]
 bid <- matrix(0,1,1)
 ask <- matrix(0,1,1)
+deptable <- matrix(0, ncol=4, nrow=1)
 for (i in 1:length(data[,1])) {
     
     if (date != data[i, 1]) {
         date <- data[i,1]
-        hist(bid[,1][-1], n=25)
-        pressed <- 0
-        while(pressed == 0) {
-            pressed <- readline()
-        }
-        hist(ask[,1][-1], n=25)
+        hist(bid[,1][-1], n=25, xlim=c(0,200))
+        hist(ask[,1][-1], n=25, xlim=c(0,1000))
         #pressed <- 0
         #while(pressed == 0) {
         #    pressed <- readline()
         #}
+        meanbid <- mean(bid[,1][-1])
+        meanask <- mean(ask[,1][-1])
+        sdbid <- sd(bid[,1][-1])
+        sdask <- sd(ask[,1][-1])
+        depvec <- matrix(c(meanbid, sdbid, meanask, sdask), ncol=4, nrow=1)
+        rownames(depvec) <- data[i-1, 1]
+        deptable <- rbind(deptable, depvec)
         bid <- matrix(0,1,1)
         ask <- matrix(0,1,1)
     }
+    
     bid <- rbind(bid, matrix(data[i, "bid.depth"], 1, 1))
     ask <- rbind(ask, matrix(data[i, "ask.depth"], 1, 1))
+    
+    if (i == nrow(data)) {
+        meanbid <- mean(bid[,1][-1])
+        meanask <- mean(ask[,1][-1])
+        sdbid <- sd(bid[,1][-1])
+        sdbid <- sd(ask[,1][-1])
+        depvec <- matrix(c(meanbid, sdbid, meanask, sdask), ncol=4, nrow=1)
+        rownames(depvec) <- data[i-1, 1]
+        deptable <- rbind(deptable, depvec)
+    }
 }
-
 
 maindir <- "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output"
 currentdir <- "\\statistics_of_the_limit_order_book\\initial_depth"

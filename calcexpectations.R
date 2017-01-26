@@ -8,12 +8,29 @@ datayear <- "\\2007"
 movmorning <- read.csv(paste(contpath, "\\move_frequency", datayear, "\\morning1min_int.csv", sep="", collapse=NULL), header=F, row.names = 1)
 movafternoon <- read.csv(paste(contpath, "\\move_frequency", datayear, "\\afternoon1min_int.csv", sep="", collapse=NULL), header=F, row.names = 1)
 
-units <- c( "1", "10", "30" )
+units <- c( "1" )
 
 for (unit in units) {
-    exppath <- paste(rootpath, datayear, "\\Exp2_", unit, "pieces.csv", sep="", collapse=NULL)
+    probpath <- paste(rootpath, datayear, "\\probability3_", unit, "pieces.csv", sep="", collapse=NULL)
+    probdata <- read.csv(probpath, stringsAsFactors=FALSE, header=T, row.names = 1)
+    pvec <- matrix(0, nrow=nrow(probdata), ncol=4)
+    for (i in 1:length(probdata[,1])) {
+        pvec[i, 1] <- as.numeric(probdata[i, 1])
+        pvec[i, 2] <- as.numeric(probdata[i, 2])
+        pvec[i, 3] <- as.numeric(probdata[i, 3])
+        pvec[i, 4] <- as.numeric(probdata[i, 4])
+    }
+    line <- paste("p_UU=", mean(pvec[,1], na.rm=T), "sd=", sd(pvec[,1], na.rm=T), ", ",
+                  "p_UD=", mean(pvec[,2], na.rm=T), "sd=", sd(pvec[,2], na.rm=T), ", ",
+                  "p_DU=", mean(pvec[,3], na.rm=T), "sd=", sd(pvec[,3], na.rm=T), ", ",
+                  "p_DD=", mean(pvec[,4], na.rm=T), "sd=", sd(pvec[,4], na.rm=T), ", ")
+    print(line)
+}
+
+for (unit in units) {
+    exppath <- paste(rootpath, datayear, "\\Exp3_", unit, "pieces.csv", sep="", collapse=NULL)
     expdata <- read.csv(exppath, stringsAsFactors=FALSE, header=T, row.names = 1)
-    probpath <- paste(rootpath, datayear, "\\probability2_", unit, "pieces.csv", sep="", collapse=NULL)
+    probpath <- paste(rootpath, datayear, "\\probability3_", unit, "pieces.csv", sep="", collapse=NULL)
     probdata <- read.csv(probpath, stringsAsFactors=FALSE, header=T, row.names = 1)
     
     table <- matrix(0, ncol=5, nrow=length(probdata[,1]))
