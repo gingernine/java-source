@@ -12,20 +12,17 @@ for (r in 1:nrow(table)) {
     if (r==1) {
         for(j in 1:5) {
             table[r,j] <- morning[m, j]
-            
         }
         m <- m+1
     } else {
         if (r%%2==0) {
             for(j in 1:5) {
                 table[r,j] <- morning[m, j]
-               
             }
             m <- m+1
         } else if (r%%2==1) {
             for(j in 1:5) {
                 table[r,j] <-afternoon[a, j]
-               
             }
             a <- a+1
         }
@@ -46,22 +43,40 @@ sd(as.numeric(table[,4]))
 mean(as.numeric(table[,5]))
 sd(as.numeric(table[,5]))
 
+par(lwd=2)
 plot(1:length(table[,3]), table[,2], ylim=c(0,0.00013), pch=1, xlab="", ylab="")
 
-plot(1:length(table[,3]), table[,3], ylim=c(0,0.00013), pch=2,
+plot(1:length(table[,3]), table[,3], ylim=c(0,0.00013), pch=0,
      cex.lab=2,
      xlab="□:1分間隔RV, ○:5分間隔RV, △:10分間隔RV",
      ylab="")
 par(new=T)
-plot(1:length(table[,3]), table[,4], ylim=c(0,0.00013), pch=3,
+plot(1:length(table[,3]), table[,4], ylim=c(0,0.00013), pch=1,
      xlab="",
      ylab="")
 par(new=T)
-plot(1:length(table[,3]), table[,5], ylim=c(0,0.00013), pch=4,
+plot(1:length(table[,3]), table[,5], ylim=c(0,0.00013), pch=2,
      xlab="",
      ylab="")
 
 
 
-
+#########################発表資料###############################
+par(lwd = 2, mar=c(5, 6, 4, 2))
+plot(1:length(table[,3]), table[,2], ylim=c(0,0.00013), pch=1,
+     col=1,
+     cex.axis=3,
+     cex.lab=4,
+     cex.main=4,
+     main="モデル上のボラティリティ(10枚1単位の場合)",
+     xlab="時系列",
+     ylab="ボラティリティ")
+plot(1:length(table[,3]), table[,4], ylim=c(0,0.00013), pch=1,
+     col=1,
+     cex.axis=3,
+     cex.lab=4,
+     cex.main=4,
+     main="5分間隔リアライズドボラティリティ",
+     xlab="時系列",
+     ylab="ボラティリティ")
 

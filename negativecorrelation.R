@@ -35,3 +35,21 @@ for (i in 1:nrow(probmat)) {
 
 mean(bind[,1], na.rm=T)
 sd(bind[,1], na.rm=T)
+
+#####################################発表資料#########################################
+maindir <- "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output\\statistics_of_the_limit_order_book\\move_frequency"
+datayear <- "\\2007"
+name <- "\\volatility_curve.csv"
+
+data <- read.csv(paste(maindir, datayear, name, sep="", collapse=NULL), header=T)
+par(new=F, mar=c(5, 6, 4, 2))
+for (i in 1:5) {
+    column <- paste("X", 100*i, sep="", collapse=NULL)
+    plot(data[,"correlation"], data[,column], xlim=c(-1, 0), ylim=c(0, 0.0001),
+         cex.axis=3, cex.lab=3, pch=20, col=i, ylab="ボラティリティ", xlab="系列相関", main="")
+    text(x=-0.2, y=data[600,column]-1e-05, label=paste(100*i, "回変動", sep="", collapse=NULL), cex=4, col=i)
+    par(new=T)
+}
+
+abline(v=-0.9, col=2)
+abline(v=-0.35)
