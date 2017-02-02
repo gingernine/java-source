@@ -1,7 +1,0 @@
-#到着率を時間毎に区切り計算，更には適合度検定する．
-
-maindir <- "C:\\Users\\kklab\\Desktop\\yurispace\\board_fluctuation\\src\\nikkei_needs_output"
-subdir <- "\\statistics_of_the_limit_order_book\\time_interval"
-branchs <- c( "\\time_interval_limit_buy", "\\time_interval_limit_sell", "\\time_interval_market_buy", "\\time_interval_market_sell" ) 
-datayear <- "\\2007"
-sessions <- c( "\\morning", "\\afternoon" )
